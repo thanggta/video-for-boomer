@@ -142,12 +142,12 @@ const Step3InputYouTube: React.FC = () => {
               placeholder={t('youtube.placeholder')}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="flex-1 h-touch text-elderly-base px-4 border-2 border-grey rounded-elderly focus:border-primary focus:outline-none"
+              className="flex-1 h-touch text-elderly-base px-4 border-2 border-grey rounded-elderly focus:border-primary focus:outline-none min-w-0"
               autoFocus
             />
             <button
               onClick={handlePaste}
-              className="w-[120px] h-touch bg-grey-light text-grey-dark rounded-elderly font-semibold text-elderly-base hover:bg-grey active:scale-95 transition-all"
+              className="w-[60px] h-touch bg-grey-light text-grey-dark rounded-elderly font-semibold text-elderly-base hover:bg-grey active:scale-95 transition-all flex-shrink-0"
             >
               {t('youtube.paste')}
             </button>
