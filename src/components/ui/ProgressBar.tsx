@@ -38,7 +38,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
 
         {showPercentage && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-elderly-xl font-bold text-grey-dark drop-shadow-sm">
+            <span className="text-elderly-xl font-bold text-white drop-shadow-sm">
               {Math.round(clampedProgress)}%
             </span>
           </div>

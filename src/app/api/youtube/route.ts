@@ -53,29 +53,38 @@ export async function POST(request: NextRequest): Promise<NextResponse<YouTubeRe
       noCheckCertificates: true,
     });
 
-    console.log('Video info retrieved:', {
-      title: videoInfo.title,
-      duration: videoInfo.duration,
-      formats: videoInfo.formats?.length || 0,
-    });
-
-    const audioFormat = videoInfo.formats
-      ?.filter((f) => f.resolution === 'audio only' || f.vcodec === 'none')
-      ?.sort((a, b) => (b.abr || 0) - (a.abr || 0))
-      ?.find((f) => f.ext === 'm4a' || f.ext === 'webm');
-
-    if (!audioFormat?.url) {
+    if (!videoInfo.formats || videoInfo.formats.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Không tìm thấy audio từ video này' },
+        { success: false, error: 'Không tìm thấy định dạng nào từ video này' },
         { status: 400 }
       );
     }
 
-    console.log('Selected audio format:', {
-      ext: audioFormat.ext,
-      abr: audioFormat.abr,
-      hasUrl: !!audioFormat.url,
-    });
+    const audioFormats = videoInfo.formats.filter((f) =>
+      f.resolution === 'audio only' || f.vcodec === 'none'
+    );
+
+    if (audioFormats.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Video này không có audio track riêng' },
+        { status: 400 }
+      );
+    }
+
+    const audioFormat = audioFormats
+      .filter((f) => f.ext === 'm4a' || f.ext === 'webm')
+      .filter((f) => (f.abr || 0) >= 48 && (f.abr || 0) <= 80)
+      .sort((a, b) => (a.abr || 0) - (b.abr || 0))[0]
+      || audioFormats.sort((a, b) => (a.abr || 0) - (b.abr || 0))[0];
+
+    if (!audioFormat?.url) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy URL audio hợp lệ' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`Audio: ${videoInfo.title} (${Math.round(videoInfo.duration / 60)}m) - ${audioFormat.ext} ${Math.round(audioFormat.abr || 0)}kbps`);
 
     const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 

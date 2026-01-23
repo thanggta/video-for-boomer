@@ -147,7 +147,7 @@ const Step3InputYouTube: React.FC = () => {
             />
             <button
               onClick={handlePaste}
-              className="w-[120px] h-touch bg-grey-light text-grey-dark rounded-elderly font-medium text-elderly-sm hover:bg-grey active:scale-95 transition-all"
+              className="w-[120px] h-touch bg-grey-light text-grey-dark rounded-elderly font-semibold text-elderly-base hover:bg-grey active:scale-95 transition-all"
             >
               {t('youtube.paste')}
             </button>

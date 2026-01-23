@@ -10,8 +10,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { url, audioUrl } = await request.json();
 
     if (audioUrl && typeof audioUrl === 'string') {
-      console.log('Streaming audio from provided URL');
-
       const response = await fetch(audioUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -58,8 +56,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    console.log('Extracting audio URL for:', cleanUrl);
-
     const videoInfo = await executeYtdlp(cleanUrl, {
       dumpSingleJson: true,
       preferFreeFormats: true,
@@ -67,19 +63,36 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       noCheckCertificates: true,
     });
 
-    const audioFormat = videoInfo.formats
-      ?.filter((f) => f.resolution === 'audio only' || f.vcodec === 'none')
-      ?.sort((a, b) => (b.abr || 0) - (a.abr || 0))
-      ?.find((f) => f.ext === 'm4a' || f.ext === 'webm');
-
-    if (!audioFormat?.url) {
+    if (!videoInfo.formats || videoInfo.formats.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Không tìm thấy audio từ video này' },
+        { success: false, error: 'Không tìm thấy định dạng nào' },
         { status: 400 }
       );
     }
 
-    console.log('Streaming audio, format:', audioFormat.ext);
+    const audioFormats = videoInfo.formats.filter((f) =>
+      f.resolution === 'audio only' || f.vcodec === 'none'
+    );
+
+    if (audioFormats.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Video không có audio track riêng' },
+        { status: 400 }
+      );
+    }
+
+    const audioFormat = audioFormats
+      .filter((f) => f.ext === 'm4a' || f.ext === 'webm')
+      .filter((f) => (f.abr || 0) >= 48 && (f.abr || 0) <= 80)
+      .sort((a, b) => (a.abr || 0) - (b.abr || 0))[0]
+      || audioFormats.sort((a, b) => (a.abr || 0) - (b.abr || 0))[0];
+
+    if (!audioFormat?.url) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy URL audio hợp lệ' },
+        { status: 400 }
+      );
+    }
 
     const response = await fetch(audioFormat.url, {
       headers: {

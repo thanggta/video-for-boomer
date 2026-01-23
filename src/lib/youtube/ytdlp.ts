@@ -61,7 +61,7 @@ export async function executeYtdlp(url: string, options: YtDlpOptions = {}): Pro
   if (options.preferFreeFormats) args.push('--prefer-free-formats');
 
   args.push('--add-header', 'referer:youtube.com');
-  args.push('--add-header', 'user-agent:googlebot');
+  args.push('--add-header', 'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
   const command = `"${PYTHON_PATH}" "${YTDLP_PATH}" ${args.map(a => `"${a}"`).join(' ')}`;
 
