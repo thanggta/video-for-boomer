@@ -1,5 +1,5 @@
-# Use Node.js 18 as base image
-FROM node:18-slim
+# Use Node.js 20 as base image (required by @distube/ytdl-core)
+FROM node:20-slim
 
 # Install Python 3 and required system dependencies
 RUN apt-get update && apt-get install -y \
