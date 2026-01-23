@@ -18,7 +18,7 @@ export async function getYouTubeInfo(url: string): Promise<VideoInfo> {
   const videoDetails = info.video_details;
 
   const audioFormats = info.format
-    .filter(f => !f.width && !f.height && f.audioQuality)
+    .filter(f => !f.width && !f.height && f.audioQuality && f.url)
     .sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
 
   if (audioFormats.length === 0) {
@@ -32,8 +32,8 @@ export async function getYouTubeInfo(url: string): Promise<VideoInfo> {
     title: videoDetails.title || 'Unknown',
     duration: videoDetails.durationInSec,
     thumbnail: videoDetails.thumbnails[videoDetails.thumbnails.length - 1]?.url || '',
-    audioUrl: bestAudio.url,
-    videoId: videoDetails.id,
+    audioUrl: bestAudio.url!,
+    videoId: videoDetails.id!,
   };
 }
 
