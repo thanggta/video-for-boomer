@@ -1,0 +1,49 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e6]: Bước 2/5
+      - generic [ref=e13]:
+        - heading "Sắp xếp thứ tự video" [level=1] [ref=e14]
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - paragraph [ref=e18]:
+              - text: Bạn có
+              - generic [ref=e19]: 2 video
+            - paragraph [ref=e20]: Sử dụng nút Lên/Xuống để sắp xếp thứ tự video
+          - generic [ref=e21]:
+            - generic [ref=e24]:
+              - generic [ref=e26]: "1."
+              - generic [ref=e27]:
+                - img "test-video-3s.mp4" [ref=e28]
+                - generic [ref=e29]: 0:03
+              - generic [ref=e30]:
+                - heading "test-video-3s.mp4" [level=3] [ref=e31]
+                - paragraph [ref=e32]: 0.1 MB
+                - button "Xóa video" [ref=e34] [cursor=pointer]:
+                  - img [ref=e35]
+                  - text: Xóa
+              - button "Di chuyển xuống" [ref=e38] [cursor=pointer]:
+                - img [ref=e39]
+            - generic [ref=e43]:
+              - generic [ref=e45]: "2."
+              - generic [ref=e46]:
+                - img "test-video-5s.mp4" [ref=e47]
+                - generic [ref=e48]: 0:05
+              - generic [ref=e49]:
+                - heading "test-video-5s.mp4" [level=3] [ref=e50]
+                - paragraph [ref=e51]: 0.2 MB
+                - button "Xóa video" [ref=e53] [cursor=pointer]:
+                  - img [ref=e54]
+                  - text: Xóa
+              - button "Di chuyển lên" [ref=e57] [cursor=pointer]:
+                - img [ref=e58]
+        - generic [ref=e60]:
+          - button "Quay lại" [ref=e61] [cursor=pointer]
+          - button "Tiếp tục" [ref=e62] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e68] [cursor=pointer]:
+    - img [ref=e69]
+  - alert [ref=e72]
+```

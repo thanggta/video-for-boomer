@@ -1,0 +1,87 @@
+{
+  "common": {
+    "continue": "Tiếp tục",
+    "back": "Quay lại",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "close": "Đóng",
+    "done": "Xong",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "loading": "Đang tải...",
+    "pleaseWait": "Vui lòng đợi"
+  },
+  "steps": {
+    "step": "Bước",
+    "of": "/"
+  },
+  "upload": {
+    "title": "Chọn video từ máy",
+    "dragDrop": "Kéo thả video vào đây hoặc nhấn để chọn",
+    "chooseVideos": "Chọn video",
+    "maxSize": "Tối đa 600MB mỗi video",
+    "maxDuration": "Tối đa 10 phút mỗi video",
+    "supported": "Hỗ trợ file .MOV và .MP4",
+    "uploading": "Đang tải lên...",
+    "processing": "Đang xử lý..."
+  },
+  "reorder": {
+    "title": "Sắp xếp thứ tự video",
+    "moveUp": "Lên",
+    "moveDown": "Xuống",
+    "remove": "Xóa",
+    "moved": "Đã di chuyển video"
+  },
+  "youtube": {
+    "title": "Nhập link YouTube",
+    "placeholder": "Dán link YouTube vào đây",
+    "paste": "Dán",
+    "preview": "Xem trước",
+    "download": "Tải âm thanh",
+    "downloading": "Đang tải âm thanh...",
+    "duration": "Thời lượng",
+    "shorterThanVideo": "Bài hát ngắn hơn video - sẽ được lặp lại",
+    "longerThanVideo": "Bài hát dài hơn video - sẽ được cắt bớt",
+    "invalidUrl": "Link không đúng định dạng",
+    "disclaimer": "Chỉ tải âm thanh từ video bạn có quyền sử dụng",
+    "understand": "Tôi hiểu"
+  },
+  "processing": {
+    "title": "Đang xử lý video",
+    "videoProgress": "Video {current}/{total}",
+    "downloading": "Đang tải xuống âm thanh...",
+    "adjusting": "Đang điều chỉnh âm thanh...",
+    "merging": "Đang ghép âm thanh...",
+    "exporting": "Đang xuất video...",
+    "doNotClose": "Vui lòng không đóng trình duyệt",
+    "estimatedTime": "Thời gian còn lại"
+  },
+  "download": {
+    "title": "Tải video về máy",
+    "individual": "Tải xuống",
+    "downloadAll": "Tải tất cả",
+    "complete": "Hoàn thành! {count} video đã sẵn sàng",
+    "startOver": "Làm lại",
+    "makeAnother": "Làm video khác",
+    "share": "Chia sẻ",
+    "downloaded": "Video đã được tải xuống!"
+  },
+  "errors": {
+    "MEMORY_ERROR": "Không đủ bộ nhớ. Vui lòng thử video nhỏ hơn hoặc xử lý ít video hơn.",
+    "FORMAT_ERROR": "File video không đúng định dạng. Chỉ hỗ trợ file .MOV và .MP4",
+    "YOUTUBE_ERROR": "Không thể tải âm thanh từ YouTube. Vui lòng thử link khác.",
+    "PROCESSING_ERROR": "Lỗi xử lý video {fileName}. Bạn có muốn bỏ qua và tiếp tục với video khác không?",
+    "BROWSER_ERROR": "Trình duyệt của bạn không hỗ trợ. Vui lòng dùng Safari hoặc Chrome phiên bản mới nhất.",
+    "FILE_TOO_LARGE": "File quá lớn (tối đa 600MB)",
+    "DURATION_TOO_LONG": "Video quá dài (tối đa 10 phút)",
+    "INVALID_FORMAT": "Định dạng không hợp lệ",
+    "tryAgain": "Thử lại",
+    "skip": "Bỏ qua"
+  },
+  "recovery": {
+    "title": "Khôi phục phiên làm việc",
+    "message": "Phiên làm việc trước chưa hoàn thành. Tiếp tục?",
+    "continue": "Tiếp tục",
+    "startNew": "Bắt đầu lại"
+  }
+}
