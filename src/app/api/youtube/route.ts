@@ -55,12 +55,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<YouTubeRe
       data: videoInfo,
     });
   } catch (error) {
-    console.error('YouTube API Error:', {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-    });
-
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : '';
+
+    console.error('YouTube API Error:', {
+      message: errorMessage,
+      stack: errorStack,
+      type: error?.constructor?.name,
+    });
 
     if (errorMessage.includes('Private video') || errorMessage.includes('private')) {
       return NextResponse.json(
@@ -76,9 +78,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<YouTubeRe
       );
     }
 
-    if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests') || errorMessage.includes('bot')) {
+    if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests') || errorMessage.includes('bot') || errorMessage.includes('Sign in')) {
       return NextResponse.json(
-        { success: false, error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' },
+        { success: false, error: 'YouTube đang chặn yêu cầu. Vui lòng thử lại sau.' },
         { status: 429 }
       );
     }
