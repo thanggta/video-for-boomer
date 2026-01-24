@@ -126,7 +126,7 @@ export async function executeYtdlp(url: string, options: YtDlpOptions = {}): Pro
 
     throw new Error(err.stderr || err.message || 'yt-dlp execution failed');
   } finally {
-    if (cookiesFileCreated) {
+    if (cookiesFileCreated && existsSync(COOKIES_PATH)) {
       try {
         unlinkSync(COOKIES_PATH);
       } catch (error) {
@@ -212,7 +212,7 @@ export async function downloadAudioWithYtdlp(url: string): Promise<{ buffer: Buf
         console.warn('Failed to cleanup audio file:', error);
       }
     }
-    if (cookiesFileCreated) {
+    if (cookiesFileCreated && existsSync(COOKIES_PATH)) {
       try {
         unlinkSync(COOKIES_PATH);
       } catch (error) {

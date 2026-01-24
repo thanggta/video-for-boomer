@@ -347,14 +347,13 @@ export const processVideos = async (
  * Estimate processing time based on video size and duration
  */
 export const estimateProcessingTime = (videos: VideoItem[]): number => {
-  // Rough estimate: 2 seconds per MB + 1 second per minute of video
   let totalTime = 0;
 
   for (const video of videos) {
     const sizeInMB = video.fileSize / (1024 * 1024);
     const durationInMinutes = video.duration / 60;
 
-    totalTime += sizeInMB * 2 + durationInMinutes * 1;
+    totalTime += sizeInMB * 0.5 + durationInMinutes * 0.3;
   }
 
   return Math.ceil(totalTime);
