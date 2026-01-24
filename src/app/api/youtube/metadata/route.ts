@@ -40,7 +40,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<MetadataR
     console.log('Fetching metadata with yt-dlp:', cleanUrl);
 
     const videoInfo = await executeYtdlp(cleanUrl, {
+      format: 'best',
       dumpSingleJson: true,
+      simulateOnly: true,
       noWarnings: true,
     });
 

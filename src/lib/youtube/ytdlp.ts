@@ -35,6 +35,7 @@ interface YtDlpOptions {
   noWarnings?: boolean;
   noCheckCertificates?: boolean;
   preferFreeFormats?: boolean;
+  simulateOnly?: boolean;
 }
 
 export interface VideoFormat {
@@ -54,12 +55,13 @@ export interface VideoInfo {
 export async function executeYtdlp(url: string, options: YtDlpOptions = {}): Promise<VideoInfo> {
   const args: string[] = [url];
 
-  if (options.format) args.push('-f', options.format);
   if (options.dumpSingleJson) args.push('--dump-single-json');
   if (options.skipDownload) args.push('--skip-download');
+  if (options.simulateOnly) args.push('--simulate');
   if (options.noWarnings) args.push('--no-warnings');
   if (options.noCheckCertificates) args.push('--no-check-certificates');
   if (options.preferFreeFormats) args.push('--prefer-free-formats');
+  if (options.format) args.push('-f', options.format);
 
   let cookiesFileCreated = false;
 
