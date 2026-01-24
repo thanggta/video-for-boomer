@@ -43,8 +43,12 @@ export interface VideoFormat {
   url: string;
   ext: string;
   abr?: number;
+  asr?: number; // Audio sample rate
   vcodec: string;
+  acodec?: string; // Audio codec (opus, mp4a, etc.)
   resolution: string;
+  format_note?: string; // Format description (e.g., "medium", "low")
+  filesize?: number; // File size in bytes
 }
 
 export interface VideoInfo {
