@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     rustc \
     cargo \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Deno (JavaScript runtime required by yt-dlp for YouTube downloads)
