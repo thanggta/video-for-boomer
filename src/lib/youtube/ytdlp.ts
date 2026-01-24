@@ -146,9 +146,10 @@ export async function downloadAudioWithYtdlp(url: string): Promise<{ buffer: Buf
     '-x',
     '--audio-format', 'mp3',
     '--audio-quality', '6',
-    '-f', 'ba/b',
+    '-S', '+size,+br',
+    '-4',
     '--no-playlist',
-    '--extractor-args', 'youtube:player_client=ios,android,web;player_skip=webpage,configs',
+    '--extractor-args', 'youtube:player_client=mweb,android_vr',
     '-o', outputTemplate,
   ];
 
