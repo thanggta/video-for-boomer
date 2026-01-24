@@ -103,10 +103,15 @@ const Step4Processing: React.FC = () => {
         }));
 
         await loadFFmpeg((progress) => {
+          // Validate progress value
+          const validProgress = isFinite(progress) && !isNaN(progress)
+            ? Math.max(0, Math.min(100, Math.round(progress)))
+            : 0;
+
           setState((prev) => ({
             ...prev,
-            loadingProgress: progress,
-            currentOperation: `Đang tải công cụ xử lý... ${progress}%`,
+            loadingProgress: validProgress,
+            currentOperation: `Đang tải công cụ xử lý... ${validProgress}%`,
           }));
         });
 

@@ -35,6 +35,7 @@ export const adjustAudioDuration = async (
       await exec([
         '-i',
         inputFileName,
+        '-vn', // Explicitly disable video
         '-c:a',
         'aac',
         '-b:a',
@@ -112,6 +113,7 @@ const loopAudio = async (
       concatFileName,
       '-t',
       targetDuration.toString(),
+      '-vn', // Explicitly disable video
       '-c:a',
       'aac',
       '-b:a',
@@ -151,6 +153,7 @@ const trimAudio = async (
     inputFileName,
     '-t',
     targetDuration.toString(),
+    '-vn', // Explicitly disable video
     '-c:a',
     'aac',
     '-b:a',
@@ -181,6 +184,7 @@ export const convertToAAC = async (
     await exec([
       '-i',
       inputFileName,
+      '-vn', // Explicitly disable video
       '-c:a',
       'aac',
       '-b:a',

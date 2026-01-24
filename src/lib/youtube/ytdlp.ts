@@ -67,13 +67,27 @@ export async function executeYtdlp(url: string, options: YtDlpOptions = {}): Pro
 
   let cookiesFileCreated = false;
 
-  if (process.env.YOUTUBE_COOKIES) {
+  // Priority 1: Use --cookies-from-browser if specified (MOST RELIABLE)
+  if (process.env.YOUTUBE_COOKIES_BROWSER) {
+    const browser = process.env.YOUTUBE_COOKIES_BROWSER.toLowerCase();
+    console.log(`Using cookies from browser: ${browser}`);
+    args.push('--cookies-from-browser', browser);
+  }
+  // Priority 2: Use cookie file from YOUTUBE_COOKIES env variable (FALLBACK)
+  else if (process.env.YOUTUBE_COOKIES) {
     try {
       const cookiesContent = process.env.YOUTUBE_COOKIES.trim();
       writeFileSync(COOKIES_PATH, cookiesContent, { encoding: 'utf8', mode: 0o600 });
 
       const lines = cookiesContent.split('\n').filter(l => !l.startsWith('#') && l.trim());
       console.log(`Using cookies from YOUTUBE_COOKIES env variable (${lines.length} cookie entries)`);
+
+      // Warn if cookie count is suspiciously low
+      if (lines.length < 15) {
+        console.warn('⚠️  WARNING: Only', lines.length, 'cookie entries found. YouTube typically requires 15+ cookies from a logged-in session.');
+        console.warn('⚠️  This may cause "Sign in to confirm you\'re not a bot" errors.');
+        console.warn('⚠️  Make sure you exported cookies while LOGGED IN to YouTube. See YOUTUBE_COOKIES_SETUP.md');
+      }
 
       args.push('--cookies', COOKIES_PATH);
       cookiesFileCreated = true;

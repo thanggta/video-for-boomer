@@ -44,13 +44,6 @@ export const loadFFmpeg = async (
   try {
     const ffmpeg = new FFmpeg();
 
-    // Set up progress listener
-    if (onProgress) {
-      ffmpeg.on('progress', ({ progress }) => {
-        onProgress(Math.round(progress * 100));
-      });
-    }
-
     // Log FFmpeg messages for debugging
     ffmpeg.on('log', ({ message }) => {
       console.log('[FFmpeg]', message);
@@ -207,7 +200,14 @@ export const exec = async (
 
   if (onProgress) {
     const progressHandler = (data: { progress: number; time: number }) => {
-      onProgress(data);
+      // Validate progress value before passing it on
+      const validProgress = {
+        progress: isFinite(data.progress) && !isNaN(data.progress)
+          ? Math.max(0, Math.min(1, data.progress))
+          : 0,
+        time: data.time || 0,
+      };
+      onProgress(validProgress);
     };
     ffmpeg.on('progress', progressHandler);
 

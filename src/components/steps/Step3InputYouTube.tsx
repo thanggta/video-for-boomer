@@ -204,20 +204,22 @@ const Step3InputYouTube: React.FC = () => {
         {/* YouTube Preview */}
         {metadata && embedUrl && !youtubeAudio && (
           <div className="mb-6">
-            <div className="aspect-video mb-4 rounded-elderly overflow-hidden">
+            <div className="aspect-video mb-4 rounded-elderly overflow-hidden bg-grey-light">
               <iframe
                 src={embedUrl}
                 title={metadata.title}
-                className="w-full h-full"
+                className="w-full h-full border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
             <h3 className="text-elderly-lg font-bold text-grey-dark mb-2">
               {metadata.title}
             </h3>
             <p className="text-elderly-base text-grey mb-2">
-              {t('youtube.duration')}: {formatYouTubeDuration(metadata.duration)}
+              Video từ YouTube
             </p>
 
             {/* Duration Comparison */}

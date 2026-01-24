@@ -4,6 +4,7 @@ const nextConfig = {
     return [
       {
         // Enable SharedArrayBuffer for FFmpeg.wasm multi-threading
+        // BUT use credentialless mode to allow YouTube iframes
         source: '/:path*',
         headers: [
           {
@@ -12,7 +13,9 @@ const nextConfig = {
           },
           {
             key: 'Cross-Origin-Embedder-Policy',
-            value: 'require-corp',
+            // Use 'credentialless' instead of 'require-corp' to allow YouTube iframes
+            // This still enables SharedArrayBuffer but is more permissive
+            value: 'credentialless',
           },
         ],
       },

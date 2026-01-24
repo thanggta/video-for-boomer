@@ -72,9 +72,9 @@ export const processVideo = async (
         '-i',
         adjustedAudioFileName,
         '-map',
-        '0:v:0', // Video from first input
+        '0:v', // Video from first input (all video streams)
         '-map',
-        '1:a:0', // Audio from second input
+        '1:a', // Audio from second input (all audio streams)
         '-c:v',
         'copy', // Copy video codec (no re-encoding, preserves quality)
         '-c:a',
