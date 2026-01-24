@@ -139,18 +139,18 @@ export async function executeYtdlp(url: string, options: YtDlpOptions = {}): Pro
 export async function downloadAudioWithYtdlp(url: string): Promise<{ buffer: Buffer; duration: number }> {
   const { randomBytes } = await import('crypto');
   const { readFileSync } = await import('fs');
-  const outputTemplate = path.join('/tmp', `yt-audio-${randomBytes(8).toString('hex')}.%(ext)s`);
-  
+  const outputTemplate = path.join('/tmp', `yt-audio-${randomBytes(8).toString('hex')}.mp3`);
+
   const args: string[] = [
     url,
     '-x',
     '--audio-format', 'mp3',
     '--audio-quality', '7',
-    '-f', 'worst[height<=480]/worst',
+    '-f', '(bestaudio[abr<=96]/bestaudio[abr<=128]/worst)[ext=m4a]/(bestaudio[abr<=96]/bestaudio[abr<=128]/worst)[ext=webm]/(bestaudio[abr<=96]/bestaudio[abr<=128]/worst)',
     '--no-warnings',
     '--no-check-certificates',
+    '--no-playlist',
     '-o', outputTemplate,
-    '--print', 'after_move:filepath',
   ];
 
   let cookiesFileCreated = false;
@@ -174,23 +174,20 @@ export async function downloadAudioWithYtdlp(url: string): Promise<{ buffer: Buf
 
   const command = `"${PYTHON_PATH}" "${YTDLP_PATH}" ${args.map(a => `"${a}"`).join(' ')}`;
 
-  let outputPath: string | null = null;
-
   try {
     console.log('Downloading and extracting audio with yt-dlp...');
-    const { stdout } = await execAsync(command, {
+
+    await execAsync(command, {
       maxBuffer: 100 * 1024 * 1024,
       timeout: 180000,
       windowsHide: true,
     });
 
-    outputPath = stdout.trim().split('\n').pop()?.trim() || null;
-
-    if (!outputPath || !existsSync(outputPath)) {
+    if (!existsSync(outputTemplate)) {
       throw new Error('yt-dlp did not produce output file');
     }
 
-    console.log(`Audio extracted to: ${outputPath}`);
+    console.log(`Audio extracted to: ${outputTemplate}`);
 
     const videoInfo = await executeYtdlp(url, {
       dumpSingleJson: true,
@@ -198,16 +195,19 @@ export async function downloadAudioWithYtdlp(url: string): Promise<{ buffer: Buf
       noWarnings: true,
     });
 
-    const buffer = readFileSync(outputPath);
-    
+    const buffer = readFileSync(outputTemplate);
+
     return {
       buffer,
       duration: videoInfo.duration || 0,
     };
+  } catch (error) {
+    console.error('yt-dlp error:', error);
+    throw error;
   } finally {
-    if (outputPath && existsSync(outputPath)) {
+    if (existsSync(outputTemplate)) {
       try {
-        unlinkSync(outputPath);
+        unlinkSync(outputTemplate);
       } catch (error) {
         console.warn('Failed to cleanup audio file:', error);
       }
