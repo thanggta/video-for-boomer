@@ -145,7 +145,7 @@ export async function downloadAudioWithYtdlp(url: string): Promise<{ buffer: Buf
     url,
     '-x',
     '--audio-format', 'mp3',
-    '--audio-quality', '5',
+    '--audio-quality', '7',
     '-f', 'worst[height<=480]/worst',
     '--no-warnings',
     '--no-check-certificates',
