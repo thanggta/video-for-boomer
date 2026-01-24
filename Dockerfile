@@ -2,12 +2,20 @@
 FROM node:20-slim
 
 # Install Python 3, Deno (for yt-dlp JS challenges), and required system dependencies
+# Including build dependencies for yt-dlp[default] packages (pycryptodomex, brotli, etc.)
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
+    python3-dev \
+    build-essential \
     curl \
     unzip \
     ca-certificates \
+    libffi-dev \
+    libssl-dev \
+    zlib1g-dev \
+    rustc \
+    cargo \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Deno (JavaScript runtime required by yt-dlp for YouTube downloads)
@@ -16,10 +24,11 @@ RUN curl -fsSL https://deno.land/install.sh | sh
 ENV DENO_INSTALL="/root/.deno"
 ENV PATH="$DENO_INSTALL/bin:$PATH"
 
-# Upgrade pip and install yt-dlp with EJS support
-# The [default] extra includes yt-dlp-ejs which contains JavaScript challenge solvers
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install --upgrade "yt-dlp[default]"
+# Upgrade pip and install yt-dlp with default extras
+# The [default] extra includes packages for handling various formats and encryption
+# Using --break-system-packages is safe in Docker containers (isolated environment)
+RUN python3 -m pip install --no-cache-dir --upgrade pip --break-system-packages && \
+    python3 -m pip install --no-cache-dir --upgrade "yt-dlp[default]" --break-system-packages
 
 # Set working directory
 WORKDIR /app
