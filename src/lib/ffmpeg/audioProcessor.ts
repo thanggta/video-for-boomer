@@ -16,23 +16,21 @@ export const adjustAudioDuration = async (
   audioDuration: number,
   onProgress?: (progress: number) => void
 ): Promise<AudioAdjustmentResult> => {
-  // Validate inputs
+  // Validate inputs - only check for completely empty/null blobs
   if (!audioBlob || audioBlob.size === 0) {
     throw new Error('Invalid audio blob: empty or null');
   }
 
-  // Validate audio blob size (should be at least 1KB per second at minimum quality)
-  const minExpectedSize = audioDuration * 1024; // 1KB per second minimum
-  if (audioBlob.size < minExpectedSize) {
-    console.warn(`Audio blob size (${audioBlob.size} bytes) is suspiciously small for ${audioDuration}s duration`);
-    console.warn(`Expected at least ${minExpectedSize} bytes`);
-    throw new Error(`Downloaded audio file is too small (${audioBlob.size} bytes). This may indicate a download error. Please try again.`);
-  }
+  // Log audio info but don't block based on size
+  // Audio will be looped if shorter than video per PRD requirements
+  // Even small audio files can be valid (short clips, low bitrate, silence)
+  console.log(`Audio blob received: ${audioBlob.size} bytes, type: ${audioBlob.type}, duration: ${audioDuration}s`);
 
-  // Validate audio blob type
-  if (!audioBlob.type.includes('audio') && !audioBlob.type.includes('webm') && !audioBlob.type.includes('mp4')) {
-    console.error(`Invalid audio blob type: ${audioBlob.type}`);
-    throw new Error(`Invalid audio format: ${audioBlob.type}. Expected audio file.`);
+  // Validate audio blob type (relaxed - allow common audio types)
+  const validTypes = ['audio', 'webm', 'mp4', 'mpeg', 'ogg', 'octet-stream'];
+  const hasValidType = validTypes.some(type => audioBlob.type.includes(type)) || audioBlob.type === '';
+  if (!hasValidType) {
+    console.warn(`Unexpected audio blob type: ${audioBlob.type}, proceeding anyway`);
   }
 
   console.log(`Processing audio: ${audioBlob.size} bytes, ${audioBlob.type}, ${audioDuration}s duration`);

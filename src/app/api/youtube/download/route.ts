@@ -115,18 +115,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         position += chunk.length;
       }
 
+      // Only warn if download seems incomplete based on content-length header
+      // Don't block valid audio - even small files can be valid (short clips, low bitrate)
       if (expectedSize > 0 && receivedLength < expectedSize * 0.9) {
         console.warn(`Incomplete download: expected ${expectedSize}, got ${receivedLength}`);
-        throw new Error(`Incomplete audio download: received ${receivedLength} bytes, expected ${expectedSize} bytes`);
+        // Don't throw - audio might still be usable, let FFmpeg validate it later
       }
 
-      const minExpectedSize = Math.max(videoInfo.duration * 1024, 50000);
-      if (receivedLength < minExpectedSize) {
-        console.warn(`Audio too small: ${receivedLength} bytes for ${videoInfo.duration}s (expected at least ${minExpectedSize})`);
-        throw new Error(`Downloaded audio is too small (${receivedLength} bytes). This may indicate a download error.`);
+      // Minimum sanity check: audio should have at least some data
+      // Very minimal threshold - 1KB minimum, to catch completely empty responses
+      if (receivedLength < 1024) {
+        throw new Error(`Downloaded audio is empty or corrupted (${receivedLength} bytes).`);
       }
 
-      console.log(`Audio downloaded successfully: ${receivedLength} bytes`);
+      console.log(`Audio downloaded successfully: ${receivedLength} bytes for ${videoInfo.duration}s duration`);
 
       const mimeType = audioFormat.ext === 'm4a' ? 'audio/mp4' : 'audio/webm';
 
@@ -172,9 +174,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    if (errorMessage.includes('Incomplete') || errorMessage.includes('too small')) {
+    if (errorMessage.includes('empty or corrupted')) {
       return NextResponse.json(
-        { success: false, error: errorMessage },
+        { success: false, error: 'Không thể tải âm thanh - dữ liệu trống hoặc bị lỗi' },
         { status: 500 }
       );
     }
