@@ -16,17 +16,43 @@ export const adjustAudioDuration = async (
   audioDuration: number,
   onProgress?: (progress: number) => void
 ): Promise<AudioAdjustmentResult> => {
-  const inputFileName = 'input_audio.m4a';
-  const outputFileName = 'adjusted_audio.m4a';
+  // Validate inputs
+  if (!audioBlob || audioBlob.size === 0) {
+    throw new Error('Invalid audio blob: empty or null');
+  }
+
+  // Validate audio blob size (should be at least 1KB per second at minimum quality)
+  const minExpectedSize = audioDuration * 1024; // 1KB per second minimum
+  if (audioBlob.size < minExpectedSize) {
+    console.warn(`Audio blob size (${audioBlob.size} bytes) is suspiciously small for ${audioDuration}s duration`);
+    console.warn(`Expected at least ${minExpectedSize} bytes`);
+    throw new Error(`Downloaded audio file is too small (${audioBlob.size} bytes). This may indicate a download error. Please try again.`);
+  }
+
+  // Validate audio blob type
+  if (!audioBlob.type.includes('audio') && !audioBlob.type.includes('webm') && !audioBlob.type.includes('mp4')) {
+    console.error(`Invalid audio blob type: ${audioBlob.type}`);
+    throw new Error(`Invalid audio format: ${audioBlob.type}. Expected audio file.`);
+  }
+
+  console.log(`Processing audio: ${audioBlob.size} bytes, ${audioBlob.type}, ${audioDuration}s duration`);
+
+  // Use unique filenames with timestamp to avoid conflicts
+  const timestamp = Date.now();
+  const inputFileName = `input_audio_${timestamp}.m4a`;
+  const outputFileName = `adjusted_audio_${timestamp}.m4a`;
 
   try {
-    // Clean up any leftover files from previous operations
-    await deleteFile(inputFileName);
-    await deleteFile(outputFileName);
-    await deleteFile('audio_concat_list.txt');
-
     // Write audio file to FFmpeg filesystem
     await writeFile(inputFileName, audioBlob);
+
+    // Verify the file was written correctly
+    const writtenData = await readFile(inputFileName);
+    if (writtenData.length !== audioBlob.size) {
+      throw new Error(`File write verification failed: expected ${audioBlob.size} bytes, got ${writtenData.length} bytes`);
+    }
+    console.log(`Audio file written successfully: ${inputFileName}, ${writtenData.length} bytes`);
+
     onProgress?.(10);
 
     if (audioDuration < videoDuration) {
@@ -103,7 +129,8 @@ const loopAudio = async (
   onProgress?.(30);
 
   // Create a temporary concat file with unique name to avoid conflicts
-  const concatFileName = 'audio_concat_list.txt';
+  const timestamp = Date.now();
+  const concatFileName = `audio_concat_list_${timestamp}.txt`;
   let concatContent = '';
 
   for (let i = 0; i < loopCount; i++) {
@@ -188,8 +215,10 @@ export const convertToAAC = async (
   audioBlob: Blob,
   onProgress?: (progress: number) => void
 ): Promise<Blob> => {
-  const inputFileName = 'input_audio.m4a';
-  const outputFileName = 'output_audio.aac';
+  // Use unique filenames with timestamp to avoid conflicts
+  const timestamp = Date.now();
+  const inputFileName = `input_audio_convert_${timestamp}.m4a`;
+  const outputFileName = `output_audio_convert_${timestamp}.aac`;
 
   try {
     await writeFile(inputFileName, audioBlob);

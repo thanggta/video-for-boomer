@@ -32,10 +32,12 @@ export const processVideo = async (
   format: string,
   onProgress?: (progress: number, operation: string) => void
 ): Promise<Blob> => {
+  // Use unique filenames with timestamp to avoid conflicts
+  const timestamp = Date.now();
   const videoExtension = format;
-  const inputVideoFileName = `input_video.${videoExtension}`;
-  const adjustedAudioFileName = 'adjusted_audio.m4a';
-  const outputVideoFileName = `output_video.${videoExtension}`;
+  const inputVideoFileName = `input_video_${timestamp}.${videoExtension}`;
+  const adjustedAudioFileName = `adjusted_audio_${timestamp}.m4a`;
+  const outputVideoFileName = `output_video_${timestamp}.${videoExtension}`;
   const mimeType = `video/${videoExtension === 'm4v' ? 'mp4' : videoExtension}`;
 
   try {
@@ -156,11 +158,13 @@ export const concatenateVideos = async (
   videos: VideoItem[],
   onProgress?: (progress: number, operation: string) => void
 ): Promise<{ blob: Blob; duration: number; format: string }> => {
-  const concatListFileName = 'concat_list.txt';
+  // Use unique filenames with timestamp to avoid conflicts
+  const timestamp = Date.now();
+  const concatListFileName = `concat_list_${timestamp}.txt`;
 
   // Detect format from first video
   const videoExtension = getVideoExtension(videos[0].fileName);
-  const outputFileName = `concatenated.${videoExtension}`;
+  const outputFileName = `concatenated_${timestamp}.${videoExtension}`;
   const mimeType = `video/${videoExtension === 'm4v' ? 'mp4' : videoExtension}`;
 
   try {
@@ -170,7 +174,7 @@ export const concatenateVideos = async (
     const videoFileNames: string[] = [];
     for (let i = 0; i < videos.length; i++) {
       const ext = getVideoExtension(videos[i].fileName);
-      const fileName = `input_${i}.${ext}`;
+      const fileName = `input_${timestamp}_${i}.${ext}`;
       await writeFile(fileName, videos[i].file);
       videoFileNames.push(fileName);
 
