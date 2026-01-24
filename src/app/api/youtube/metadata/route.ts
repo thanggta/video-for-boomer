@@ -41,7 +41,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<MetadataR
 
     const videoInfo = await executeYtdlp(cleanUrl, {
       dumpSingleJson: true,
-      skipDownload: true,
       noWarnings: true,
     });
 
