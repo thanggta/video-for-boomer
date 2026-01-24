@@ -41,18 +41,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Filter for REAL audio formats:
-    // 1. Must have audio codec (acodec not "none" or undefined)
-    // 2. Must have no video codec (vcodec === "none") OR resolution === "audio only"
-    // 3. Must have a valid URL
-    // 4. Exclude storyboard/thumbnail formats (they have vcodec but no real audio)
     const audioFormats = videoInfo.formats.filter((f) => {
-      const hasAudioCodec = f.acodec && f.acodec !== 'none';
-      const hasNoVideo = f.vcodec === 'none' || f.resolution === 'audio only';
+      const isAudioOnly = f.resolution === 'audio only' || f.vcodec === 'none';
       const hasUrl = !!f.url;
       const isNotStoryboard = !f.format_note?.toLowerCase().includes('storyboard');
 
-      return hasAudioCodec && hasNoVideo && hasUrl && isNotStoryboard;
+      return isAudioOnly && hasUrl && isNotStoryboard;
     });
 
     console.log(`Found ${audioFormats.length} audio formats:`,
@@ -77,23 +71,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Select best audio format:
-    // 1. Prefer m4a or webm (widely compatible)
-    // 2. Prefer higher bitrate for better quality
-    // 3. Prefer opus codec (better quality at lower bitrates)
-    const audioFormat = audioFormats
-      .filter((f) => f.ext === 'm4a' || f.ext === 'webm')
+    const compatibleFormats = audioFormats.filter((f) => f.ext === 'm4a' || f.ext === 'webm');
+
+    const audioFormat = compatibleFormats
       .sort((a, b) => {
-        // Prefer higher bitrate
         const bitrateA = a.abr || 0;
         const bitrateB = b.abr || 0;
-        if (bitrateB !== bitrateA) return bitrateB - bitrateA;
-        // Prefer opus codec
-        if (a.acodec === 'opus' && b.acodec !== 'opus') return -1;
-        if (b.acodec === 'opus' && a.acodec !== 'opus') return 1;
-        return 0;
+
+        const aInRange = bitrateA >= 48 && bitrateA <= 80;
+        const bInRange = bitrateB >= 48 && bitrateB <= 80;
+
+        if (aInRange && !bInRange) return -1;
+        if (!aInRange && bInRange) return 1;
+
+        if (aInRange && bInRange) {
+          if (a.acodec === 'opus' && b.acodec !== 'opus') return -1;
+          if (b.acodec === 'opus' && a.acodec !== 'opus') return 1;
+          return bitrateA - bitrateB;
+        }
+
+        return bitrateA - bitrateB;
       })[0]
-      || audioFormats.sort((a, b) => (b.abr || 0) - (a.abr || 0))[0];
+      || audioFormats.sort((a, b) => (a.abr || 0) - (b.abr || 0))[0];
 
     if (!audioFormat?.url) {
       return NextResponse.json(
