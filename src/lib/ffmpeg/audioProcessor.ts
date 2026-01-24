@@ -20,6 +20,11 @@ export const adjustAudioDuration = async (
   const outputFileName = 'adjusted_audio.m4a';
 
   try {
+    // Clean up any leftover files from previous operations
+    await deleteFile(inputFileName);
+    await deleteFile(outputFileName);
+    await deleteFile('audio_concat_list.txt');
+
     // Write audio file to FFmpeg filesystem
     await writeFile(inputFileName, audioBlob);
     onProgress?.(10);
@@ -97,8 +102,8 @@ const loopAudio = async (
 
   onProgress?.(30);
 
-  // Create a temporary concat file
-  const concatFileName = 'concat_list.txt';
+  // Create a temporary concat file with unique name to avoid conflicts
+  const concatFileName = 'audio_concat_list.txt';
   let concatContent = '';
 
   for (let i = 0; i < loopCount; i++) {
