@@ -1,7 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
-import { existsSync } from 'fs';
+import { existsSync, writeFileSync, unlinkSync } from 'fs';
 
 const execAsync = promisify(exec);
 
@@ -26,6 +26,7 @@ function findPythonPath(): string {
 
 const PYTHON_PATH = findPythonPath();
 const YTDLP_PATH = path.join(process.cwd(), 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp');
+const COOKIES_PATH = path.join('/tmp', 'youtube-cookies.txt');
 
 interface YtDlpOptions {
   format?: string;
@@ -60,6 +61,19 @@ export async function executeYtdlp(url: string, options: YtDlpOptions = {}): Pro
   if (options.noCheckCertificates) args.push('--no-check-certificates');
   if (options.preferFreeFormats) args.push('--prefer-free-formats');
 
+  let cookiesFileCreated = false;
+
+  if (process.env.YOUTUBE_COOKIES) {
+    try {
+      writeFileSync(COOKIES_PATH, process.env.YOUTUBE_COOKIES);
+      args.push('--cookies', COOKIES_PATH);
+      cookiesFileCreated = true;
+      console.log('Using cookies from YOUTUBE_COOKIES env variable');
+    } catch (error) {
+      console.warn('Failed to write cookies file:', error);
+    }
+  }
+
   args.push('--add-header', 'referer:youtube.com');
   args.push('--add-header', 'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
@@ -85,6 +99,14 @@ export async function executeYtdlp(url: string, options: YtDlpOptions = {}): Pro
     }
 
     throw new Error(err.stderr || err.message || 'yt-dlp execution failed');
+  } finally {
+    if (cookiesFileCreated) {
+      try {
+        unlinkSync(COOKIES_PATH);
+      } catch (error) {
+        console.warn('Failed to cleanup cookies file:', error);
+      }
+    }
   }
 }
 

@@ -299,17 +299,6 @@ const Step4Processing: React.FC = () => {
                 ĐỪNG TẮT MÀN HÌNH
               </p>
             </div>
-
-            {/* SharedArrayBuffer Info */}
-            {state.stage === 'loading' && (
-              <div className="mt-4 text-center">
-                <p className="text-elderly-sm text-grey">
-                  {supportsSharedArrayBuffer()
-                    ? 'Chế độ đa luồng: Bật ✓'
-                    : 'Chế độ đơn luồng (xử lý có thể chậm hơn)'}
-                </p>
-              </div>
-            )}
           </>
         )}
       </div>

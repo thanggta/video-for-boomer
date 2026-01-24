@@ -1,17 +1,5 @@
 import { YouTubeAudioData, YouTubeMetadata } from '@/types/youtube';
 
-export interface YouTubeAPIResponse {
-  success: boolean;
-  data?: {
-    title: string;
-    duration: number;
-    thumbnail: string;
-    audioUrl: string;
-    videoId: string;
-  };
-  error?: string;
-}
-
 export const validateYouTubeUrl = (url: string): boolean => {
   const regex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)[\w-]+/;
   return regex.test(url);
@@ -42,7 +30,7 @@ export const getYouTubeThumbnail = (videoId: string, quality: 'default' | 'hq' |
 
 export const fetchYouTubeMetadata = async (url: string): Promise<YouTubeMetadata> => {
   try {
-    const response = await fetch('/api/youtube', {
+    const response = await fetch('/api/youtube/metadata', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -50,7 +38,12 @@ export const fetchYouTubeMetadata = async (url: string): Promise<YouTubeMetadata
       body: JSON.stringify({ url }),
     });
 
-    const data: YouTubeAPIResponse = await response.json();
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Không thể tải thông tin video');
+    }
+
+    const data = await response.json();
 
     if (!data.success || !data.data) {
       throw new Error(data.error || 'Không thể tải thông tin video');
@@ -73,8 +66,9 @@ export const downloadYouTubeAudio = async (
   onProgress?: (progress: number) => void
 ): Promise<YouTubeAudioData> => {
   try {
-    // First, get metadata
-    const metadataResponse = await fetch('/api/youtube', {
+    console.log('Downloading audio from YouTube...');
+
+    const audioResponse = await fetch('/api/youtube/download', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -82,123 +76,31 @@ export const downloadYouTubeAudio = async (
       body: JSON.stringify({ url }),
     });
 
-    const metadataData: YouTubeAPIResponse = await metadataResponse.json();
-
-    if (!metadataData.success || !metadataData.data) {
-      throw new Error(metadataData.error || 'Không thể tải thông tin video');
+    if (!audioResponse.ok) {
+      const errorData = await audioResponse.json();
+      throw new Error(errorData.error || 'Không thể tải âm thanh');
     }
 
-    const metadata = metadataData.data;
-
-    console.log('Metadata fetched, downloading audio...');
-
-    // Try to download through proxy first (pass audioUrl for faster proxy download)
-    try {
-      const audioResponse = await fetch('/api/youtube/download', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url, audioUrl: metadata.audioUrl }),
-      });
-
-      if (audioResponse.ok) {
-        // Track download progress
-        const contentLength = audioResponse.headers.get('content-length');
-        const total = contentLength ? parseInt(contentLength, 10) : 0;
-
-        if (!audioResponse.body) {
-          throw new Error('Không có dữ liệu âm thanh');
-        }
-
-        const reader = audioResponse.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let receivedLength = 0;
-
-        while (true) {
-          const { done, value } = await reader.read();
-
-          if (done) break;
-
-          chunks.push(value);
-          receivedLength += value.length;
-
-          if (onProgress && total > 0) {
-            const progress = (receivedLength / total) * 100;
-            onProgress(Math.round(progress));
-          }
-        }
-
-        console.log('Audio downloaded, total size:', receivedLength);
-
-        // Combine chunks into a single Uint8Array
-        const audioData = new Uint8Array(receivedLength);
-        let position = 0;
-        for (const chunk of chunks) {
-          audioData.set(chunk, position);
-          position += chunk.length;
-        }
-
-        // Detect mime type from content-type header
-        const contentType = audioResponse.headers.get('content-type') || 'audio/webm';
-
-        // Create blob from audio data
-        const audioBlob = new Blob([audioData], { type: contentType });
-
-        console.log('Audio blob created:', {
-          size: audioBlob.size,
-          type: audioBlob.type,
-        });
-
-        return {
-          blob: audioBlob,
-          metadata: {
-            title: metadata.title,
-            duration: metadata.duration,
-            thumbnail: metadata.thumbnail,
-            url: url,
-          },
-        };
-      }
-    } catch (proxyError) {
-      console.warn('Proxy download failed, trying direct download:', proxyError);
-    }
-
-    // Fallback: Try direct download from audioUrl
-    console.log('Attempting direct download from audioUrl...');
-
-    if (!metadata.audioUrl) {
-      throw new Error('Không có URL âm thanh khả dụng');
-    }
-
-    const directResponse = await fetch(metadata.audioUrl);
-
-    if (!directResponse.ok) {
-      throw new Error('YouTube hiện đang chặn tải xuống tự động. Vui lòng thử lại sau hoặc sử dụng link khác.');
-    }
-
-    const contentLength = directResponse.headers.get('content-length');
+    const contentLength = audioResponse.headers.get('content-length');
     const total = contentLength ? parseInt(contentLength, 10) : 0;
 
-    if (!directResponse.body) {
+    if (!audioResponse.body) {
       throw new Error('Không có dữ liệu âm thanh');
     }
 
-    const reader = directResponse.body.getReader();
+    const reader = audioResponse.body.getReader();
     const chunks: Uint8Array[] = [];
     let receivedLength = 0;
 
     while (true) {
       const { done, value } = await reader.read();
-
       if (done) break;
 
       chunks.push(value);
       receivedLength += value.length;
 
       if (onProgress && total > 0) {
-        const progress = (receivedLength / total) * 100;
-        onProgress(Math.round(progress));
+        onProgress(Math.round((receivedLength / total) * 100));
       }
     }
 
@@ -209,16 +111,16 @@ export const downloadYouTubeAudio = async (
       position += chunk.length;
     }
 
-    const audioBlob = new Blob([audioData], { type: 'audio/webm' });
+    const contentType = audioResponse.headers.get('content-type') || 'audio/webm';
+    const audioBlob = new Blob([audioData], { type: contentType });
+
+    console.log('Audio downloaded:', { size: audioBlob.size, type: audioBlob.type });
+
+    const metadata = await fetchYouTubeMetadata(url);
 
     return {
       blob: audioBlob,
-      metadata: {
-        title: metadata.title,
-        duration: metadata.duration,
-        thumbnail: metadata.thumbnail,
-        url: url,
-      },
+      metadata,
     };
   } catch (error) {
     console.error('Error downloading YouTube audio:', error);

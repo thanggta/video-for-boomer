@@ -40,6 +40,23 @@ const Step3InputYouTube: React.FC = () => {
     }
   }, [url]);
 
+  // Warn user before leaving page during download
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDownloading) {
+        e.preventDefault();
+        e.returnValue = 'Đang tải âm thanh từ YouTube, bạn có chắc muốn thoát?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isDownloading]);
+
   const handlePaste = async () => {
     try {
       if (!navigator.clipboard) {
@@ -224,9 +241,24 @@ const Step3InputYouTube: React.FC = () => {
 
             {/* Download Progress */}
             {isDownloading && downloadProgress > 0 && (
-              <div className="mt-4">
-                <ProgressBar progress={downloadProgress} showPercentage />
-              </div>
+              <>
+                <div className="mt-4">
+                  <ProgressBar progress={downloadProgress} showPercentage />
+                </div>
+
+                {/* Warning Message */}
+                <div className="mt-4 p-6 bg-red-50 border-2 border-danger rounded-elderly">
+                  <p className="text-elderly-lg text-center text-danger font-bold mb-2">
+                    ⚠️ ĐỪNG RỜI KHỎI TRANG NÀY
+                  </p>
+                  <p className="text-elderly-base text-center text-danger font-semibold">
+                    Đang tải âm thanh từ YouTube
+                  </p>
+                  <p className="text-elderly-base text-center text-danger font-semibold">
+                    ĐỪNG TẮT MÀN HÌNH
+                  </p>
+                </div>
+              </>
             )}
           </div>
         )}
