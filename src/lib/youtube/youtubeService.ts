@@ -116,11 +116,19 @@ export const downloadYouTubeAudio = async (
 
     console.log('Audio downloaded:', { size: audioBlob.size, type: audioBlob.type });
 
+    // Get duration from download response header (more reliable than metadata endpoint)
+    const durationHeader = audioResponse.headers.get('X-Video-Duration');
+    const duration = durationHeader ? parseFloat(durationHeader) : 0;
+
     const metadata = await fetchYouTubeMetadata(url);
 
+    // Override duration with actual value from yt-dlp
     return {
       blob: audioBlob,
-      metadata,
+      metadata: {
+        ...metadata,
+        duration: duration || metadata.duration, // Use yt-dlp duration if available
+      },
     };
   } catch (error) {
     console.error('Error downloading YouTube audio:', error);

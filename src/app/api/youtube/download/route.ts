@@ -90,6 +90,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       headers: {
         'Content-Type': mimeType,
         ...(contentLength && { 'Content-Length': contentLength }),
+        'X-Video-Duration': videoInfo.duration.toString(), // Pass duration to client
         'Cache-Control': 'public, max-age=3600',
         'Access-Control-Allow-Origin': '*',
       },

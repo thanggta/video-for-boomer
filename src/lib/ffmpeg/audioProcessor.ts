@@ -78,8 +78,18 @@ const loopAudio = async (
   audioDuration: number,
   onProgress?: (progress: number) => void
 ): Promise<void> => {
+  // Safety check: prevent division by zero
+  if (audioDuration <= 0) {
+    throw new Error('Invalid audio duration: cannot loop audio with zero or negative duration');
+  }
+
   // Calculate how many times to loop
   const loopCount = Math.ceil(targetDuration / audioDuration);
+
+  // Safety check: prevent infinite loops
+  if (!isFinite(loopCount) || loopCount <= 0) {
+    throw new Error(`Invalid loop count: ${loopCount}. Target: ${targetDuration}s, Audio: ${audioDuration}s`);
+  }
 
   console.log(
     `Looping audio ${loopCount} times to match video duration (${targetDuration}s vs ${audioDuration}s)`

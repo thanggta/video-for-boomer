@@ -114,26 +114,6 @@ const Step3InputYouTube: React.FC = () => {
     }
   };
 
-  const getDurationComparison = () => {
-    if (!metadata || totalVideoDuration === 0) return null;
-
-    if (metadata.duration < totalVideoDuration) {
-      return {
-        type: 'shorter' as const,
-        message: t('youtube.shorterThanVideo'),
-        color: 'text-blue-600',
-      };
-    } else if (metadata.duration > totalVideoDuration) {
-      return {
-        type: 'longer' as const,
-        message: t('youtube.longerThanVideo'),
-        color: 'text-orange-600',
-      };
-    }
-    return null;
-  };
-
-  const comparison = getDurationComparison();
   const embedUrl = metadata ? getYouTubeEmbedUrl(url) : null;
 
   return (
@@ -222,15 +202,6 @@ const Step3InputYouTube: React.FC = () => {
               Video từ YouTube
             </p>
 
-            {/* Duration Comparison */}
-            {comparison && (
-              <div className={`p-4 bg-blue-50 border border-blue-300 rounded-elderly mb-4`}>
-                <p className={`text-elderly-base font-semibold ${comparison.color}`}>
-                  ℹ️ {comparison.message}
-                </p>
-              </div>
-            )}
-
             {/* Download Button */}
             <LargeButton
               onClick={handleDownload}
@@ -286,9 +257,6 @@ const Step3InputYouTube: React.FC = () => {
                 <h3 className="text-elderly-lg font-bold text-grey-dark">
                   {youtubeAudio.metadata.title}
                 </h3>
-                <p className="text-elderly-base text-grey">
-                  {t('youtube.duration')}: {formatYouTubeDuration(youtubeAudio.metadata.duration)}
-                </p>
               </div>
             </div>
             <p className="text-elderly-sm text-success font-semibold">
