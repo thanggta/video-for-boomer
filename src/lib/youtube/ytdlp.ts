@@ -136,6 +136,93 @@ export async function executeYtdlp(url: string, options: YtDlpOptions = {}): Pro
   }
 }
 
+export async function downloadAudioWithYtdlp(url: string): Promise<{ buffer: Buffer; duration: number }> {
+  const { randomBytes } = await import('crypto');
+  const { readFileSync } = await import('fs');
+  const outputTemplate = path.join('/tmp', `yt-audio-${randomBytes(8).toString('hex')}.%(ext)s`);
+  
+  const args: string[] = [
+    url,
+    '-x',
+    '--audio-format', 'best',
+    '--audio-quality', '5',
+    '-f', 'bestaudio[abr>=48][abr<=80]/bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio',
+    '--no-warnings',
+    '--no-check-certificates',
+    '--prefer-free-formats',
+    '-o', outputTemplate,
+    '--print', 'after_move:filepath',
+  ];
+
+  let cookiesFileCreated = false;
+
+  if (process.env.YOUTUBE_COOKIES_BROWSER) {
+    const browser = process.env.YOUTUBE_COOKIES_BROWSER.toLowerCase();
+    args.push('--cookies-from-browser', browser);
+  } else if (process.env.YOUTUBE_COOKIES) {
+    try {
+      const cookiesContent = process.env.YOUTUBE_COOKIES.trim();
+      writeFileSync(COOKIES_PATH, cookiesContent, { encoding: 'utf8', mode: 0o600 });
+      args.push('--cookies', COOKIES_PATH);
+      cookiesFileCreated = true;
+    } catch (error) {
+      console.warn('Failed to write cookies file:', error);
+    }
+  }
+
+  args.push('--add-header', 'referer:youtube.com');
+  args.push('--add-header', 'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+
+  const command = `"${PYTHON_PATH}" "${YTDLP_PATH}" ${args.map(a => `"${a}"`).join(' ')}`;
+
+  let outputPath: string | null = null;
+
+  try {
+    console.log('Downloading and extracting audio with yt-dlp...');
+    const { stdout } = await execAsync(command, {
+      maxBuffer: 100 * 1024 * 1024,
+      timeout: 180000,
+      windowsHide: true,
+    });
+
+    outputPath = stdout.trim().split('\n').pop()?.trim() || null;
+
+    if (!outputPath || !existsSync(outputPath)) {
+      throw new Error('yt-dlp did not produce output file');
+    }
+
+    console.log(`Audio extracted to: ${outputPath}`);
+
+    const videoInfo = await executeYtdlp(url, {
+      dumpSingleJson: true,
+      skipDownload: true,
+      noWarnings: true,
+    });
+
+    const buffer = readFileSync(outputPath);
+    
+    return {
+      buffer,
+      duration: videoInfo.duration || 0,
+    };
+  } finally {
+    if (outputPath && existsSync(outputPath)) {
+      try {
+        unlinkSync(outputPath);
+      } catch (error) {
+        console.warn('Failed to cleanup audio file:', error);
+      }
+    }
+    if (cookiesFileCreated) {
+      try {
+        unlinkSync(COOKIES_PATH);
+      } catch (error) {
+        console.warn('Failed to cleanup cookies file:', error);
+      }
+    }
+  }
+}
+
 export function extractVideoId(url: string): string | null {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#\s]+)/,

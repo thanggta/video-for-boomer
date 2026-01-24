@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { executeYtdlp, isValidYouTubeUrl, cleanYouTubeUrl } from '@/lib/youtube/ytdlp';
+import { executeYtdlp, isValidYouTubeUrl, cleanYouTubeUrl, downloadAudioWithYtdlp } from '@/lib/youtube/ytdlp';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -54,21 +54,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
 
     if (audioFormats.length === 0) {
-      // Log all formats for debugging
-      console.error('No audio formats found. Available formats:',
-        videoInfo.formats.map(f => ({
-          ext: f.ext,
-          vcodec: f.vcodec,
-          acodec: f.acodec,
-          resolution: f.resolution,
-          abr: f.abr,
-          format_note: f.format_note,
-        }))
-      );
-      return NextResponse.json(
-        { success: false, error: 'Video không có audio track riêng' },
-        { status: 400 }
-      );
+      console.log('No separate audio tracks found. Using yt-dlp to extract audio from combined formats...');
+
+      try {
+        const { buffer, duration } = await downloadAudioWithYtdlp(cleanUrl);
+
+        const mimeType = 'audio/mp4';
+        const audioData = new Uint8Array(buffer);
+
+        return new NextResponse(audioData, {
+          status: 200,
+          headers: {
+            'Content-Type': mimeType,
+            'Content-Length': buffer.length.toString(),
+            'X-Video-Duration': duration.toString(),
+            'Cache-Control': 'public, max-age=3600',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (extractError) {
+        console.error('Failed to extract audio with yt-dlp:', extractError);
+        return NextResponse.json(
+          { success: false, error: 'Không thể trích xuất âm thanh từ video' },
+          { status: 500 }
+        );
+      }
     }
 
     const compatibleFormats = audioFormats.filter((f) => f.ext === 'm4a' || f.ext === 'webm');
