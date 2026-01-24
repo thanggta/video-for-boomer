@@ -36,6 +36,7 @@ interface YtDlpOptions {
   noCheckCertificates?: boolean;
   preferFreeFormats?: boolean;
   simulateOnly?: boolean;
+  noCheckFormats?: boolean;
 }
 
 export interface VideoFormat {
@@ -60,6 +61,7 @@ export async function executeYtdlp(url: string, options: YtDlpOptions = {}): Pro
   if (options.simulateOnly) args.push('--simulate');
   if (options.noWarnings) args.push('--no-warnings');
   if (options.noCheckCertificates) args.push('--no-check-certificates');
+  if (options.noCheckFormats) args.push('--no-check-formats');
   if (options.preferFreeFormats) args.push('--prefer-free-formats');
   if (options.format) args.push('-f', options.format);
 
