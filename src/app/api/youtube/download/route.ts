@@ -67,34 +67,82 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     console.log(`Downloading audio: ${audioFormat.ext} ${Math.round(audioFormat.abr || 0)}kbps`);
 
-    const response = await fetch(audioFormat.url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer': 'https://www.youtube.com/',
-      },
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.status}`);
+    try {
+      const response = await fetch(audioFormat.url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://www.youtube.com/',
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error('No audio data');
+      }
+
+      const expectedLength = response.headers.get('content-length');
+      const expectedSize = expectedLength ? parseInt(expectedLength, 10) : 0;
+
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let receivedLength = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        chunks.push(value);
+        receivedLength += value.length;
+
+        if (expectedSize > 0 && receivedLength > expectedSize * 1.1) {
+          throw new Error('Downloaded size exceeds expected size');
+        }
+      }
+
+      const audioData = new Uint8Array(receivedLength);
+      let position = 0;
+      for (const chunk of chunks) {
+        audioData.set(chunk, position);
+        position += chunk.length;
+      }
+
+      if (expectedSize > 0 && receivedLength < expectedSize * 0.9) {
+        console.warn(`Incomplete download: expected ${expectedSize}, got ${receivedLength}`);
+        throw new Error(`Incomplete audio download: received ${receivedLength} bytes, expected ${expectedSize} bytes`);
+      }
+
+      const minExpectedSize = Math.max(videoInfo.duration * 1024, 50000);
+      if (receivedLength < minExpectedSize) {
+        console.warn(`Audio too small: ${receivedLength} bytes for ${videoInfo.duration}s (expected at least ${minExpectedSize})`);
+        throw new Error(`Downloaded audio is too small (${receivedLength} bytes). This may indicate a download error.`);
+      }
+
+      console.log(`Audio downloaded successfully: ${receivedLength} bytes`);
+
+      const mimeType = audioFormat.ext === 'm4a' ? 'audio/mp4' : 'audio/webm';
+
+      return new NextResponse(audioData, {
+        status: 200,
+        headers: {
+          'Content-Type': mimeType,
+          'Content-Length': receivedLength.toString(),
+          'X-Video-Duration': videoInfo.duration.toString(),
+          'Cache-Control': 'public, max-age=3600',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    if (!response.body) {
-      throw new Error('No audio data');
-    }
-
-    const mimeType = audioFormat.ext === 'm4a' ? 'audio/mp4' : 'audio/webm';
-    const contentLength = response.headers.get('content-length');
-
-    return new NextResponse(response.body, {
-      status: 200,
-      headers: {
-        'Content-Type': mimeType,
-        ...(contentLength && { 'Content-Length': contentLength }),
-        'X-Video-Duration': videoInfo.duration.toString(), // Pass duration to client
-        'Cache-Control': 'public, max-age=3600',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
   } catch (error) {
     console.error('YouTube Download Error:', {
       error,
@@ -102,6 +150,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    if (errorMessage.includes('aborted')) {
+      return NextResponse.json(
+        { success: false, error: 'Tải xuống bị timeout. Vui lòng thử lại.' },
+        { status: 408 }
+      );
+    }
 
     if (errorMessage.includes('Sign in') || errorMessage.includes('bot')) {
       return NextResponse.json(
@@ -114,6 +169,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         { success: false, error: 'Video riêng tư hoặc không khả dụng' },
         { status: 400 }
+      );
+    }
+
+    if (errorMessage.includes('Incomplete') || errorMessage.includes('too small')) {
+      return NextResponse.json(
+        { success: false, error: errorMessage },
+        { status: 500 }
       );
     }
 
