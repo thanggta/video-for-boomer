@@ -59,13 +59,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       try {
         const { buffer, duration } = await downloadAudioWithYtdlp(cleanUrl);
 
-        const mimeType = 'audio/mp4';
         const audioData = new Uint8Array(buffer);
 
         return new NextResponse(audioData, {
           status: 200,
           headers: {
-            'Content-Type': mimeType,
+            'Content-Type': 'audio/mpeg',
             'Content-Length': buffer.length.toString(),
             'X-Video-Duration': duration.toString(),
             'Cache-Control': 'public, max-age=3600',

@@ -144,12 +144,11 @@ export async function downloadAudioWithYtdlp(url: string): Promise<{ buffer: Buf
   const args: string[] = [
     url,
     '-x',
-    '--audio-format', 'best',
+    '--audio-format', 'mp3',
     '--audio-quality', '5',
-    '-f', 'bestaudio[abr>=48][abr<=80]/bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio',
+    '-f', 'worst[height<=480]/worst',
     '--no-warnings',
     '--no-check-certificates',
-    '--prefer-free-formats',
     '-o', outputTemplate,
     '--print', 'after_move:filepath',
   ];
