@@ -37,7 +37,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+# Skip postinstall scripts to avoid GitHub API rate limits (we install yt-dlp separately via Python)
+RUN npm install --ignore-scripts
+
+# Manually create the youtube-dl-exec binary directory and symlink to our yt-dlp installation
+# This allows youtube-dl-exec to use our Python yt-dlp instead of downloading its own binary
+RUN mkdir -p node_modules/youtube-dl-exec/bin && \
+    ln -sf $(which yt-dlp) node_modules/youtube-dl-exec/bin/yt-dlp || true
 
 # Copy the rest of the application
 COPY . .
