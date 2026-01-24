@@ -149,7 +149,7 @@ export async function downloadAudioWithYtdlp(url: string): Promise<{ buffer: Buf
     '-S', '+size,+br',
     '-4',
     '--no-playlist',
-    '--extractor-args', 'youtube:player_client=mweb,android_vr',
+    // Removed problematic player_client args - let yt-dlp use default clients with JS runtime
     '-o', outputTemplate,
   ];
 
