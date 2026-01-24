@@ -20,9 +20,12 @@ const options = {
 console.log('Testing YouTube download locally...');
 console.log('URL:', testUrl);
 
+const startTime = Date.now();
+
 const req = http.request(options, (res) => {
+  const firstByteTime = Date.now();
   console.log(`Status: ${res.statusCode}`);
-  console.log('Headers:', res.headers);
+  console.log(`Time to first byte: ${firstByteTime - startTime}ms`);
 
   let chunks = [];
   let size = 0;
@@ -34,10 +37,13 @@ const req = http.request(options, (res) => {
   });
 
   res.on('end', () => {
+    const totalTime = Date.now() - startTime;
     console.log('\n');
     if (res.statusCode === 200) {
       console.log('✅ SUCCESS!');
       console.log(`Total size: ${(size / 1024).toFixed(2)} KB`);
+      console.log(`Total time: ${(totalTime / 1000).toFixed(2)}s`);
+      console.log(`Speed: ${((size / 1024) / (totalTime / 1000)).toFixed(2)} KB/s`);
       console.log(`Duration: ${res.headers['x-video-duration']} seconds`);
       console.log(`Content-Type: ${res.headers['content-type']}`);
     } else {
