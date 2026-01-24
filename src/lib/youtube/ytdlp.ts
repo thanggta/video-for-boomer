@@ -65,10 +65,14 @@ export async function executeYtdlp(url: string, options: YtDlpOptions = {}): Pro
 
   if (process.env.YOUTUBE_COOKIES) {
     try {
-      writeFileSync(COOKIES_PATH, process.env.YOUTUBE_COOKIES);
+      const cookiesContent = process.env.YOUTUBE_COOKIES.trim();
+      writeFileSync(COOKIES_PATH, cookiesContent, { encoding: 'utf8', mode: 0o600 });
+
+      const lines = cookiesContent.split('\n').filter(l => !l.startsWith('#') && l.trim());
+      console.log(`Using cookies from YOUTUBE_COOKIES env variable (${lines.length} cookie entries)`);
+
       args.push('--cookies', COOKIES_PATH);
       cookiesFileCreated = true;
-      console.log('Using cookies from YOUTUBE_COOKIES env variable');
     } catch (error) {
       console.warn('Failed to write cookies file:', error);
     }
