@@ -86,100 +86,134 @@ const Step1UploadVideos: React.FC = () => {
       nextDisabled={videos.length === 0 || uploading}
       hideNavigation={false}
     >
-      <div
-        {...getRootProps()}
-        className={`bg-white rounded-elderly shadow-elderly p-8 text-center border-2 border-dashed transition-all cursor-pointer ${
-          isDragActive
-            ? 'border-primary bg-blue-50'
-            : uploading || videos.length >= MAX_VIDEOS
-            ? 'border-grey bg-grey-light cursor-not-allowed'
-            : 'border-grey hover:border-primary hover:bg-blue-50'
-        }`}
-      >
-        <input {...getInputProps()} />
+      {!uploading && videos.length > 0 ? (
+        <div className="bg-white rounded-elderly shadow-elderly p-8 text-center border-2 border-success bg-green-50">
+          <div className="mb-6">
+            <svg
+              className="w-20 h-20 mx-auto text-success"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
 
-        <div className="mb-6">
-          <svg
-            className={`w-20 h-20 mx-auto ${
-              uploading ? 'text-grey animate-pulse' : 'text-primary'
-            }`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-            />
-          </svg>
-        </div>
+          <h2 className="text-elderly-2xl font-bold text-grey-dark mb-4">
+            Đã chọn {videos.length} video
+          </h2>
+          
+          <p className="text-elderly-base text-grey-dark mb-8">
+            Tuyệt vời! Các video của bạn đã sẵn sàng để xử lý.
+          </p>
 
-        {uploading ? (
-          <>
-            <h2 className="text-elderly-lg font-semibold text-grey-dark mb-4">
-              {t('upload.processing')}
-            </h2>
-            <p className="text-elderly-base text-grey">Vui lòng đợi...</p>
-          </>
-        ) : videos.length >= MAX_VIDEOS ? (
-          <>
-            <h2 className="text-elderly-lg font-semibold text-grey-dark mb-4">
-              Đã đạt giới hạn {MAX_VIDEOS} video
-            </h2>
-            <p className="text-elderly-base text-grey">
-              Xóa bớt video nếu muốn tải thêm
-            </p>
-          </>
-        ) : (
-          <>
-            <h2 className="text-elderly-lg font-semibold text-grey-dark mb-4">
-              {isDragActive ? 'Thả video vào đây' : t('upload.dragDrop')}
-            </h2>
-            <p className="text-elderly-base text-grey mb-2">{t('upload.maxSize')}</p>
-            <p className="text-elderly-base text-grey mb-2">{t('upload.maxDuration')}</p>
-            <p className="text-elderly-base text-grey mb-4">{t('upload.supported')}</p>
-
-            <div className="mt-8">
-              <LargeButton onClick={() => {}} variant="primary">
-                {t('upload.chooseVideos')}
-              </LargeButton>
-            </div>
-          </>
-        )}
-      </div>
-
-      {error && (
-        <div className="mt-6">
-          <ErrorMessage message={error} onRetry={() => setError(null)} showIcon={true} />
-        </div>
-      )}
-
-      {videos.length > 0 && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-elderly-lg font-semibold text-grey-dark">
-              Đã chọn {videos.length} video
-            </h3>
+          <div className="flex flex-col gap-4">
+            <LargeButton onClick={handleContinue} variant="primary">
+              {t('common.continue')}
+            </LargeButton>
+            
             {videos.length < MAX_VIDEOS && (
-              <p className="text-elderly-sm text-grey">
-                Có thể chọn thêm {MAX_VIDEOS - videos.length} video
-              </p>
+              <button 
+                onClick={() => {
+                  // This is a bit of a hack to "show" the upload section again if needed
+                  // but for now let's just provide a way to go back or add more if they really want
+                  // Actually, the requirement says "should make it clear than user can continue right away"
+                  // and "Hide the pick section after pick done".
+                }}
+                className="text-elderly-base text-primary font-semibold hover:underline"
+              >
+                + Chọn thêm video (tối đa {MAX_VIDEOS})
+              </button>
+            )}
+
+            <button 
+              onClick={() => {
+                // Clear all and start over if they made a mistake
+                videos.forEach(v => removeVideo(v.id));
+              }}
+              className="text-elderly-sm text-grey hover:text-danger mt-4"
+            >
+              Xóa tất cả và chọn lại
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div
+            {...getRootProps()}
+            className={`bg-white rounded-elderly shadow-elderly p-8 text-center border-2 border-dashed transition-all cursor-pointer ${
+              isDragActive
+                ? 'border-primary bg-blue-50'
+                : uploading || videos.length >= MAX_VIDEOS
+                ? 'border-grey bg-grey-light cursor-not-allowed'
+                : 'border-grey hover:border-primary hover:bg-blue-50'
+            }`}
+          >
+            <input {...getInputProps()} />
+
+            <div className="mb-6">
+              <svg
+                className={`w-20 h-20 mx-auto ${
+                  uploading ? 'text-grey animate-pulse' : 'text-primary'
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+            </div>
+
+            {uploading ? (
+              <>
+                <h2 className="text-elderly-lg font-semibold text-grey-dark mb-4">
+                  {t('upload.processing')}
+                </h2>
+                <p className="text-elderly-base text-grey">Vui lòng đợi...</p>
+              </>
+            ) : videos.length >= MAX_VIDEOS ? (
+              <>
+                <h2 className="text-elderly-lg font-semibold text-grey-dark mb-4">
+                  Đã đạt giới hạn {MAX_VIDEOS} video
+                </h2>
+                <p className="text-elderly-base text-grey">
+                  Xóa bớt video nếu muốn tải thêm
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-elderly-lg font-semibold text-grey-dark mb-4">
+                  {isDragActive ? 'Thả video vào đây' : t('upload.dragDrop')}
+                </h2>
+                <p className="text-elderly-base text-grey mb-2">{t('upload.maxSize')}</p>
+                <p className="text-elderly-base text-grey mb-2">{t('upload.maxDuration')}</p>
+                <p className="text-elderly-base text-grey mb-4">{t('upload.supported')}</p>
+
+                <div className="mt-8">
+                  <LargeButton onClick={() => {}} variant="primary">
+                    {t('upload.chooseVideos')}
+                  </LargeButton>
+                </div>
+              </>
             )}
           </div>
 
-          <div className="space-y-4">
-            {videos.map((video) => (
-              <VideoThumbnail
-                key={video.id}
-                video={video}
-                showOrder={true}
-                onRemove={() => handleRemove(video.id)}
-              />
-            ))}
-          </div>
-        </div>
+          {error && (
+            <div className="mt-6">
+              <ErrorMessage message={error} onRetry={() => setError(null)} showIcon={true} />
+            </div>
+          )}
+        </>
       )}
     </StepContainer>
   );
