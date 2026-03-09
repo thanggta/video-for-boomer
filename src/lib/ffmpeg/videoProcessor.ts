@@ -2,7 +2,8 @@ import { writeFile, readFile, exec, deleteFile, uint8ArrayToBlob, cleanup } from
 import { adjustAudioDuration } from './audioProcessor';
 import { VideoItem } from '@/types/video';
 import { YouTubeAudioData } from '@/types/youtube';
-import { IMAGE_DURATION, isImageFile } from '@/lib/utils/fileValidator';
+import { isImageFile } from '@/lib/utils/fileValidator';
+import { IMAGE_DURATION } from "@/config/constants";
 
 export interface ProcessingProgress {
   currentVideo: number;
