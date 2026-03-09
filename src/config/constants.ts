@@ -9,6 +9,8 @@ export const AUDIO_FORMAT = 'mp3';
 
 // Video settings
 export const SUPPORTED_VIDEO_FORMATS = ['video/quicktime', 'video/mov', 'video/mp4'];
+export const SUPPORTED_IMAGE_FORMATS = ['image/jpeg', 'image/png', 'image/webp'];
+export const IMAGE_DURATION = 3; // 3 seconds per image
 export const VIDEO_THUMBNAIL_TIME = 1; // Generate thumbnail at 1 second
 
 // Processing settings (simplified - no IndexedDB)

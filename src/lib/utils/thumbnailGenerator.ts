@@ -2,6 +2,14 @@ import { VIDEO_THUMBNAIL_TIME } from '@/config/constants';
 
 export const generateVideoThumbnail = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = () => reject(new Error('Failed to generate image thumbnail'));
+      reader.readAsDataURL(file);
+      return;
+    }
+
     const video = document.createElement('video');
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');

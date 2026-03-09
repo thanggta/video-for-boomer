@@ -63,6 +63,9 @@ const Step1UploadVideos: React.FC = () => {
     accept: {
       'video/quicktime': ['.mov'],
       'video/mp4': ['.mp4'], // Also accept MP4 for broader compatibility
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/webp': ['.webp']
     },
     multiple: true,
     disabled: uploading || videos.length >= MAX_VIDEOS,
@@ -105,11 +108,11 @@ const Step1UploadVideos: React.FC = () => {
           </div>
 
           <h2 className="text-elderly-2xl font-bold text-grey-dark mb-4">
-            Đã chọn {videos.length} video
+            Đã chọn {videos.length} video / ảnh
           </h2>
           
           <p className="text-elderly-base text-grey-dark mb-8">
-            Tuyệt vời! Các video của bạn đã sẵn sàng để xử lý.
+            Tuyệt vời! Các file của bạn đã sẵn sàng để xử lý.
           </p>
 
           <div className="flex flex-col gap-4">
@@ -127,7 +130,7 @@ const Step1UploadVideos: React.FC = () => {
                 }}
                 className="text-elderly-base text-primary font-semibold hover:underline"
               >
-                + Chọn thêm video (tối đa {MAX_VIDEOS})
+                + Chọn thêm (tối đa {MAX_VIDEOS})
               </button>
             )}
 
@@ -184,16 +187,16 @@ const Step1UploadVideos: React.FC = () => {
             ) : videos.length >= MAX_VIDEOS ? (
               <>
                 <h2 className="text-elderly-lg font-semibold text-grey-dark mb-4">
-                  Đã đạt giới hạn {MAX_VIDEOS} video
+                  Đã đạt giới hạn {MAX_VIDEOS} mục
                 </h2>
                 <p className="text-elderly-base text-grey">
-                  Xóa bớt video nếu muốn tải thêm
+                  Xóa bớt mục nếu muốn tải thêm
                 </p>
               </>
             ) : (
               <>
                 <h2 className="text-elderly-lg font-semibold text-grey-dark mb-4">
-                  {isDragActive ? 'Thả video vào đây' : t('upload.dragDrop')}
+                  {isDragActive ? 'Thả file vào đây' : t('upload.dragDrop')}
                 </h2>
                 <p className="text-elderly-base text-grey mb-2">{t('upload.maxSize')}</p>
                 <p className="text-elderly-base text-grey mb-2">{t('upload.maxDuration')}</p>
@@ -201,7 +204,7 @@ const Step1UploadVideos: React.FC = () => {
 
                 <div className="mt-8">
                   <LargeButton onClick={() => {}} variant="primary">
-                    {t('upload.chooseVideos')}
+                    Chọn Video / Ảnh
                   </LargeButton>
                 </div>
               </>

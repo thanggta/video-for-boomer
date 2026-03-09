@@ -1,20 +1,26 @@
 import { ValidationResult, VideoMetadata } from '@/types/video';
-import { MAX_FILE_SIZE, MAX_DURATION, SUPPORTED_VIDEO_FORMATS } from '@/config/constants';
+import { MAX_FILE_SIZE, MAX_DURATION, SUPPORTED_VIDEO_FORMATS, SUPPORTED_IMAGE_FORMATS, IMAGE_DURATION } from '@/config/constants';
 import { t } from './i18n';
 
-export const validateVideoFile = async (file: File): Promise<ValidationResult> => {
-  // Check file format
-  const fileName = file.name.toLowerCase();
-  const hasValidExtension = fileName.endsWith('.mov') || fileName.endsWith('.mp4');
+export const isImageFile = (fileName: string): boolean => {
+  return /\.(jpg|jpeg|png|webp)$/i.test(fileName);
+};
 
-  if (!SUPPORTED_VIDEO_FORMATS.includes(file.type) && !hasValidExtension) {
+export const validateVideoFile = async (file: File): Promise<ValidationResult> => {
+  const fileName = file.name.toLowerCase();
+
+  const isSupported = SUPPORTED_VIDEO_FORMATS.includes(file.type) ||
+                      SUPPORTED_IMAGE_FORMATS.includes(file.type) ||
+                      isImageFile(fileName) ||
+                      fileName.endsWith('.mov') || fileName.endsWith('.mp4');
+
+  if (!isSupported) {
     return {
       valid: false,
       error: t('errors.FORMAT_ERROR'),
     };
   }
 
-  // Check file size
   if (file.size > MAX_FILE_SIZE) {
     return {
       valid: false,
@@ -22,9 +28,15 @@ export const validateVideoFile = async (file: File): Promise<ValidationResult> =
     };
   }
 
-  // Extract video metadata
   try {
-    const metadata = await extractVideoMetadata(file);
+    const isImage = file.type.startsWith('image/') || isImageFile(fileName);
+    let metadata: VideoMetadata;
+
+    if (isImage) {
+      metadata = await extractImageMetadata(file);
+    } else {
+      metadata = await extractVideoMetadata(file);
+    }
 
     // Check duration
     if (metadata.duration > MAX_DURATION) {
@@ -44,6 +56,31 @@ export const validateVideoFile = async (file: File): Promise<ValidationResult> =
       error: t('errors.INVALID_FORMAT'),
     };
   }
+};
+
+export const extractImageMetadata = (file: File): Promise<VideoMetadata> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.onload = () => {
+      // Clean up
+      URL.revokeObjectURL(img.src);
+
+      resolve({
+        duration: IMAGE_DURATION,
+        width: img.width,
+        height: img.height,
+        size: file.size,
+      });
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      reject(new Error('Failed to load image metadata'));
+    };
+
+    img.src = URL.createObjectURL(file);
+  });
 };
 
 export const extractVideoMetadata = (file: File): Promise<VideoMetadata> => {

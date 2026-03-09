@@ -2,6 +2,7 @@ import { writeFile, readFile, exec, deleteFile, uint8ArrayToBlob, cleanup } from
 import { adjustAudioDuration } from './audioProcessor';
 import { VideoItem } from '@/types/video';
 import { YouTubeAudioData } from '@/types/youtube';
+import { IMAGE_DURATION, isImageFile } from '@/lib/utils/fileValidator';
 
 export interface ProcessingProgress {
   currentVideo: number;
@@ -136,6 +137,62 @@ const getVideoExtension = (fileName: string): string => {
   return match ? match[1] : 'mp4'; // Default to mp4 if no match
 };
 
+const getImageExtension = (fileName: string): string => {
+  const match = fileName.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/);
+  return match ? match[0] : '.jpg';
+};
+
+/**
+ * Convert an image to a 3-second video
+ */
+const convertImageToVideo = async (
+  imageItem: VideoItem,
+  id: string,
+  onProgress?: (progress: number) => void
+): Promise<VideoItem> => {
+  const ext = getImageExtension(imageItem.fileName);
+  const imageFileName = `input_img_${id}${ext}`;
+  const outputVideoFileName = `output_img_vid_${id}.mp4`;
+
+  await writeFile(imageFileName, imageItem.file);
+
+  try {
+    // Convert image to a video using libx264
+    // Pad to 1080x1920 to ensure consistency when concat with other videos
+    await exec(
+      [
+        '-loop', '1',
+        '-t', String(IMAGE_DURATION),
+        '-i', imageFileName,
+        '-c:v', 'libx264',
+        '-r', '30',
+        '-pix_fmt', 'yuv420p',
+        '-preset', 'ultrafast',
+        '-vf', 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1',
+        outputVideoFileName
+      ],
+      (progress) => {
+        onProgress?.(progress.progress * 100);
+      }
+    );
+
+    const outputData = await readFile(outputVideoFileName);
+    const outputBlob = uint8ArrayToBlob(outputData, 'video/mp4');
+
+    return {
+      ...imageItem,
+      id: `converted_${imageItem.id}`,
+      file: new File([outputBlob], `converted_${imageItem.fileName}.mp4`, { type: 'video/mp4' }),
+      fileName: `converted_${imageItem.fileName}.mp4`,
+      fileSize: outputBlob.size,
+      duration: IMAGE_DURATION,
+    };
+  } finally {
+    await deleteFile(imageFileName);
+    await deleteFile(outputVideoFileName);
+  }
+};
+
 /**
  * Get video format for FFmpeg output
  */
@@ -251,6 +308,31 @@ export const processVideos = async (
   const errors: Array<{ videoId: string; error: string }> = [];
 
   try {
+    // Step 0: Convert any images to videos
+    onProgress?.({
+      currentVideo: 0,
+      totalVideos: videos.length,
+      currentOperation: 'Đang chuẩn bị file hình ảnh...',
+      progress: 0,
+    });
+
+    const normalizedVideos: VideoItem[] = [];
+    for (let i = 0; i < videos.length; i++) {
+      const v = videos[i];
+      if (isImageFile(v.fileName)) {
+        onProgress?.({
+          currentVideo: i + 1,
+          totalVideos: videos.length,
+          currentOperation: `Đang chuyển đổi ảnh ${i + 1}/${videos.length} sang video...`,
+          progress: ((i) / videos.length) * 100,
+        });
+        const videoFromImage = await convertImageToVideo(v, `img_${Date.now()}_${i}`);
+        normalizedVideos.push(videoFromImage);
+      } else {
+        normalizedVideos.push(v);
+      }
+    }
+
     // Step 1: Concatenate all videos into one
     onProgress?.({
       currentVideo: 1,
@@ -260,7 +342,7 @@ export const processVideos = async (
     });
 
     const concatenatedVideo = await concatenateVideos(
-      videos,
+      normalizedVideos,
       (progress, operation) => {
         const clampedProgress = clampProgress(progress * 0.5); // First 50% is concatenation
         onProgress?.({
@@ -360,10 +442,10 @@ export const estimateProcessingTime = (videos: VideoItem[]): number => {
 };
 
 /**
- * Check if video format is supported
+ * Check if file format is supported
  */
 export const isVideoFormatSupported = (fileName: string): boolean => {
-  const supportedFormats = ['.mp4', '.mov', '.m4v', '.avi', '.mkv', '.webm'];
+  const supportedFormats = ['.mp4', '.mov', '.m4v', '.avi', '.mkv', '.webm', '.jpg', '.jpeg', '.png', '.webp'];
   const extension = fileName.toLowerCase().match(/\.[^/.]+$/);
 
   return extension ? supportedFormats.includes(extension[0]) : false;

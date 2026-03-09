@@ -128,120 +128,11 @@ const Step3InputYouTube: React.FC = () => {
       nextLabel={t('common.continue')}
     >
       <div className="bg-white rounded-elderly shadow-elderly p-8">
-        {/* URL Input */}
-        <div className="mb-4">
-          <label className="block text-elderly-base font-semibold text-grey-dark mb-2">
-            Link YouTube:
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder={t('youtube.placeholder')}
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="flex-1 h-touch text-elderly-base px-4 border-2 border-grey rounded-elderly focus:border-primary focus:outline-none min-w-0"
-              autoFocus
-            />
-            <button
-              onClick={handlePaste}
-              className="w-[60px] h-touch bg-grey-light text-grey-dark rounded-elderly font-semibold text-elderly-base hover:bg-inherit active:scale-95 transition-all flex-shrink-0"
-            >
-              {t('youtube.paste')}
-            </button>
-          </div>
-          {url && !isValidUrl && (
-            <p className="mt-2 text-elderly-sm text-danger">{t('youtube.invalidUrl')}</p>
-          )}
-        </div>
-
-        {/* Preview Button */}
-        {isValidUrl && !metadata && !youtubeAudio && (
-          <div className="mb-4">
-            <LargeButton
-              onClick={handlePreview}
-              variant="primary"
-              disabled={isLoadingMetadata}
-              loading={isLoadingMetadata}
-            >
-              {isLoadingMetadata ? t('common.loading') : t('youtube.preview')}
-            </LargeButton>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4">
-            <ErrorMessage
-              message={error}
-              onRetry={() => {
-                setError(null);
-                handlePreview();
-              }}
-            />
-          </div>
-        )}
-
-        {/* YouTube Preview */}
-        {metadata && embedUrl && !youtubeAudio && (
-          <div className="mb-6">
-            <div className="aspect-video mb-4 rounded-elderly overflow-hidden bg-grey-light">
-              <iframe
-                src={embedUrl}
-                title={metadata.title}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
-            <h3 className="text-elderly-lg font-bold text-grey-dark mb-2">
-              {metadata.title}
-            </h3>
-            <p className="text-elderly-base text-grey mb-2">
-              Video từ YouTube
-            </p>
-
-            {/* Download Button */}
-            <LargeButton
-              onClick={handleDownload}
-              variant="primary"
-              disabled={isDownloading}
-              loading={isDownloading}
-            >
-              {isDownloading ? t('youtube.downloading') : t('youtube.download')}
-            </LargeButton>
-
-            {/* Download Progress */}
-            {isDownloading && downloadProgress > 0 && (
-              <>
-                <div className="mt-4">
-                  <ProgressBar progress={downloadProgress} showPercentage />
-                </div>
-
-                {/* Warning Message */}
-                <div className="mt-4 p-6 bg-red-50 border-2 border-danger rounded-elderly">
-                  <p className="text-elderly-lg text-center text-danger font-bold mb-2">
-                    ⚠️ ĐỪNG RỜI KHỎI TRANG NÀY
-                  </p>
-                  <p className="text-elderly-base text-center text-danger font-semibold">
-                    Đang tải âm thanh từ YouTube
-                  </p>
-                  <p className="text-elderly-base text-center text-danger font-semibold">
-                    ĐỪNG TẮT MÀN HÌNH
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Success State */}
-        {youtubeAudio && (
-          <div className="p-6 bg-green-50 border-2 border-success rounded-elderly">
-            <div className="flex items-center gap-3 mb-3">
+        {youtubeAudio ? (
+          <div className="p-8 bg-green-50 border-2 border-success rounded-elderly text-center">
+            <div className="mb-6">
               <svg
-                className="w-8 h-8 text-success flex-shrink-0"
+                className="w-20 h-20 mx-auto text-success"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -253,16 +144,139 @@ const Step3InputYouTube: React.FC = () => {
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <div>
-                <h3 className="text-elderly-lg font-bold text-grey-dark">
-                  {youtubeAudio.metadata.title}
-                </h3>
-              </div>
             </div>
-            <p className="text-elderly-sm text-success font-semibold">
-              ✓ Âm thanh đã sẵn sàng! Nhấn &ldquo;Tiếp tục&rdquo; để xử lý video.
+
+            <h2 className="text-elderly-2xl font-bold text-grey-dark mb-4">
+              {youtubeAudio.metadata.title}
+            </h2>
+            
+            <p className="text-elderly-base text-success font-semibold mb-8">
+              ✓ Âm thanh đã sẵn sàng!
             </p>
+
+            <div className="flex flex-col gap-4">
+              <LargeButton onClick={nextStep} variant="primary">
+                {t('common.continue')}
+              </LargeButton>
+              
+              <button 
+                onClick={() => setYoutubeAudio(null)}
+                className="text-elderly-sm text-grey hover:text-danger mt-4"
+              >
+                Chọn bài khác
+              </button>
+            </div>
           </div>
+        ) : (
+          <>
+            {/* URL Input */}
+            <div className="mb-4">
+              <label className="block text-elderly-base font-semibold text-grey-dark mb-2">
+                Link YouTube:
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder={t('youtube.placeholder')}
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="flex-1 h-touch text-elderly-base px-4 border-2 border-grey rounded-elderly focus:border-primary focus:outline-none min-w-0"
+                  autoFocus
+                />
+                <button
+                  onClick={handlePaste}
+                  className="w-[60px] h-touch bg-grey-light text-grey-dark rounded-elderly font-semibold text-elderly-base hover:bg-inherit active:scale-95 transition-all flex-shrink-0"
+                >
+                  {t('youtube.paste')}
+                </button>
+              </div>
+              {url && !isValidUrl && (
+                <p className="mt-2 text-elderly-sm text-danger">{t('youtube.invalidUrl')}</p>
+              )}
+            </div>
+
+            {/* Preview Button */}
+            {isValidUrl && !metadata && (
+              <div className="mb-4">
+                <LargeButton
+                  onClick={handlePreview}
+                  variant="primary"
+                  disabled={isLoadingMetadata}
+                  loading={isLoadingMetadata}
+                >
+                  {isLoadingMetadata ? t('common.loading') : t('youtube.preview')}
+                </LargeButton>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4">
+                <ErrorMessage
+                  message={error}
+                  onRetry={() => {
+                    setError(null);
+                    handlePreview();
+                  }}
+                />
+              </div>
+            )}
+
+            {/* YouTube Preview */}
+            {metadata && embedUrl && (
+              <div className="mb-6">
+                <div className="aspect-video mb-4 rounded-elderly overflow-hidden bg-grey-light">
+                  <iframe
+                    src={embedUrl}
+                    title={metadata.title}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </div>
+                <h3 className="text-elderly-lg font-bold text-grey-dark mb-2">
+                  {metadata.title}
+                </h3>
+                <p className="text-elderly-base text-grey mb-2">
+                  Video từ YouTube
+                </p>
+
+                {/* Download Button */}
+                <LargeButton
+                  onClick={handleDownload}
+                  variant="primary"
+                  disabled={isDownloading}
+                  loading={isDownloading}
+                >
+                  {isDownloading ? t('youtube.downloading') : t('youtube.download')}
+                </LargeButton>
+
+                {/* Download Progress */}
+                {isDownloading && downloadProgress > 0 && (
+                  <>
+                    <div className="mt-4">
+                      <ProgressBar progress={downloadProgress} showPercentage />
+                    </div>
+
+                    {/* Warning Message */}
+                    <div className="mt-4 p-6 bg-red-50 border-2 border-danger rounded-elderly">
+                      <p className="text-elderly-lg text-center text-danger font-bold mb-2">
+                        ⚠️ ĐỪNG RỜI KHỎI TRANG NÀY
+                      </p>
+                      <p className="text-elderly-base text-center text-danger font-semibold">
+                        Đang tải âm thanh từ YouTube
+                      </p>
+                      <p className="text-elderly-base text-center text-danger font-semibold">
+                        ĐỪNG TẮT MÀN HÌNH
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </StepContainer>
