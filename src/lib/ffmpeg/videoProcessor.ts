@@ -159,16 +159,18 @@ const convertImageToVideo = async (
 
   try {
     // Convert image to a video using libx264
-    // Pad to 1080x1920 to ensure consistency when concat with other videos
+    // -loop 1 before -i is correct (input option), -t must be after -i (output option)
+    // -threads 1 avoids libx264 multi-thread deadlocks in WebAssembly
     await exec(
       [
         '-loop', '1',
-        '-t', String(IMAGE_DURATION),
         '-i', imageFileName,
         '-c:v', 'libx264',
+        '-t', String(IMAGE_DURATION),
         '-r', '30',
         '-pix_fmt', 'yuv420p',
         '-preset', 'ultrafast',
+        '-threads', '1',
         '-vf', 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1',
         outputVideoFileName
       ],

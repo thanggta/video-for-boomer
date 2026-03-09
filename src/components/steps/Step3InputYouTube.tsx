@@ -254,7 +254,7 @@ const Step3InputYouTube: React.FC = () => {
                 </LargeButton>
 
                 {/* Download Progress */}
-                {isDownloading && downloadProgress > 0 && (
+                {isDownloading && (
                   <>
                     <div className="mt-4">
                       <ProgressBar progress={downloadProgress} showPercentage />
