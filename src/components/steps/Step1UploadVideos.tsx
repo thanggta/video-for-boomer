@@ -58,7 +58,7 @@ const Step1UploadVideos: React.FC = () => {
     }
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop: processFiles,
     accept: {
       'video/quicktime': ['.mov'],
@@ -121,13 +121,8 @@ const Step1UploadVideos: React.FC = () => {
             </LargeButton>
             
             {videos.length < MAX_VIDEOS && (
-              <button 
-                onClick={() => {
-                  // This is a bit of a hack to "show" the upload section again if needed
-                  // but for now let's just provide a way to go back or add more if they really want
-                  // Actually, the requirement says "should make it clear than user can continue right away"
-                  // and "Hide the pick section after pick done".
-                }}
+              <button
+                onClick={open}
                 className="text-elderly-base text-primary font-semibold hover:underline"
               >
                 + Chọn thêm (tối đa {MAX_VIDEOS})

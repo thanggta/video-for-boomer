@@ -9,7 +9,6 @@ import {
   fetchYouTubeMetadata,
   downloadYouTubeAudio,
   getYouTubeEmbedUrl,
-  formatYouTubeDuration,
 } from '@/lib/youtube/youtubeService';
 import { YouTubeMetadata } from '@/types/youtube';
 
@@ -22,23 +21,40 @@ const Step3InputYouTube: React.FC = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Calculate total video duration
   const totalVideoDuration = videos.reduce((sum, video) => sum + video.duration, 0);
 
-  // Validate URL on change
+  // Validate + auto-fetch metadata on URL change
   useEffect(() => {
-    if (url.trim()) {
-      const valid = validateYouTubeUrl(url.trim());
-      setIsValidUrl(valid);
-      if (!valid) {
-        setMetadata(null);
-      }
-    } else {
+    setMetadata(null);
+    setError(null);
+
+    const trimmed = url.trim();
+    if (!trimmed) {
       setIsValidUrl(false);
-      setMetadata(null);
+      return;
     }
-  }, [url]);
+
+    const valid = validateYouTubeUrl(trimmed);
+    setIsValidUrl(valid);
+    if (!valid) return;
+
+    const timer = setTimeout(async () => {
+      setIsLoadingMetadata(true);
+      try {
+        const data = await fetchYouTubeMetadata(trimmed);
+        setMetadata(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Không thể tải thông tin video');
+      } finally {
+        setIsLoadingMetadata(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [url, retryKey]);
 
   // Warn user before leaving page during download
   useEffect(() => {
@@ -72,23 +88,6 @@ const Step3InputYouTube: React.FC = () => {
     } catch (err) {
       console.error('Failed to read clipboard:', err);
       setError('Không thể đọc clipboard. Vui lòng cấp quyền hoặc dán thủ công (long-press vào ô nhập liệu).');
-    }
-  };
-
-  const handlePreview = async () => {
-    if (!isValidUrl || !url.trim()) return;
-
-    setIsLoadingMetadata(true);
-    setError(null);
-
-    try {
-      const data = await fetchYouTubeMetadata(url.trim());
-      setMetadata(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể tải thông tin video');
-      setMetadata(null);
-    } finally {
-      setIsLoadingMetadata(false);
     }
   };
 
@@ -195,30 +194,15 @@ const Step3InputYouTube: React.FC = () => {
               )}
             </div>
 
-            {/* Preview Button */}
-            {isValidUrl && !metadata && (
-              <div className="mb-4">
-                <LargeButton
-                  onClick={handlePreview}
-                  variant="primary"
-                  disabled={isLoadingMetadata}
-                  loading={isLoadingMetadata}
-                >
-                  {isLoadingMetadata ? t('common.loading') : t('youtube.preview')}
-                </LargeButton>
-              </div>
+            {/* Loading metadata */}
+            {isLoadingMetadata && (
+              <p className="mb-4 text-elderly-sm text-grey animate-pulse">Đang tải thông tin...</p>
             )}
 
             {/* Error Message */}
             {error && (
               <div className="mb-4">
-                <ErrorMessage
-                  message={error}
-                  onRetry={() => {
-                    setError(null);
-                    handlePreview();
-                  }}
-                />
+                <ErrorMessage message={error} onRetry={() => { setError(null); setRetryKey(k => k + 1); }} />
               </div>
             )}
 

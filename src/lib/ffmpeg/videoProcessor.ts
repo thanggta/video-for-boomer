@@ -143,41 +143,64 @@ const getVideoExtension = (fileName: string): string => {
   return match ? match[1] : 'mp4'; // Default to mp4 if no match
 };
 
-const getImageExtension = (fileName: string): string => {
-  const match = fileName.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/);
-  return match ? match[0] : '.jpg';
-};
 
 /**
  * Convert an image to a 3-second video
  */
+// Pre-resize image to 1080x1920 using Canvas (GPU-accelerated) before FFmpeg.
+// Avoids FFmpeg having to decode + scale a massive source image inside WASM.
+const resizeImageToFrame = (file: File): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      canvas.width = 1080;
+      canvas.height = 1920;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, 1080, 1920);
+      const scale = Math.min(1080 / img.width, 1920 / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, (1080 - w) / 2, (1920 - h) / 2, w, h);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))),
+        'image/jpeg',
+        0.92
+      );
+    };
+
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')); };
+    img.src = url;
+  });
+
 const convertImageToVideo = async (
   imageItem: VideoItem,
   id: string,
   onProgress?: (progress: number) => void
 ): Promise<VideoItem> => {
-  const ext = getImageExtension(imageItem.fileName);
-  const imageFileName = `input_img_${id}${ext}`;
   const outputVideoFileName = `output_img_vid_${id}.mov`;
 
-  await writeFile(imageFileName, imageItem.file);
+  // Pre-resize with Canvas — FFmpeg receives a small 1080x1920 JPEG, no scaling needed
+  const resizedBlob = await resizeImageToFrame(imageItem.file);
+  await writeFile(`input_img_${id}.jpg`, resizedBlob);
 
   try {
-    // Convert image to a video using libx264
-    // -loop 1 before -i is correct (input option), -t must be after -i (output option)
-    // -threads 1 avoids libx264 multi-thread deadlocks in WebAssembly
+    // Image is already 1080x1920 — no vf scale needed, just encode to video
     await exec(
       [
         '-loop', '1',
-        '-i', imageFileName,
+        '-i', `input_img_${id}.jpg`,
         '-c:v', 'libx264',
         '-t', String(IMAGE_DURATION),
         '-r', '30',
         '-pix_fmt', 'yuv420p',
         '-preset', 'ultrafast',
         '-threads', '1',
-        '-vf', 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1',
-        outputVideoFileName
+        outputVideoFileName,
       ],
       (progress) => {
         onProgress?.(progress.progress * 100);
@@ -196,7 +219,7 @@ const convertImageToVideo = async (
       duration: IMAGE_DURATION,
     };
   } finally {
-    await deleteFile(imageFileName);
+    await deleteFile(`input_img_${id}.jpg`);
     await deleteFile(outputVideoFileName);
   }
 };
