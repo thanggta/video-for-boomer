@@ -40,7 +40,7 @@ export const processVideo = async (
   const inputVideoFileName = `input_video_${timestamp}.${videoExtension}`;
   const adjustedAudioFileName = `adjusted_audio_${timestamp}.m4a`;
   const outputVideoFileName = `output_video_${timestamp}.${videoExtension}`;
-  const mimeType = `video/${videoExtension === 'm4v' ? 'mp4' : videoExtension}`;
+  const mimeType = getVideoMimeType(videoExtension);
 
   try {
     onProgress?.(5, 'Đang tải video...');
@@ -120,6 +120,11 @@ export const processVideo = async (
   }
 };
 
+const getVideoMimeType = (ext: string): string => {
+  const map: Record<string, string> = { mov: 'video/quicktime', m4v: 'video/mp4' };
+  return map[ext] || `video/${ext}`;
+};
+
 /**
  * Clamp progress value between 0 and 100
  */
@@ -153,7 +158,7 @@ const convertImageToVideo = async (
 ): Promise<VideoItem> => {
   const ext = getImageExtension(imageItem.fileName);
   const imageFileName = `input_img_${id}${ext}`;
-  const outputVideoFileName = `output_img_vid_${id}.mp4`;
+  const outputVideoFileName = `output_img_vid_${id}.mov`;
 
   await writeFile(imageFileName, imageItem.file);
 
@@ -180,19 +185,66 @@ const convertImageToVideo = async (
     );
 
     const outputData = await readFile(outputVideoFileName);
-    const outputBlob = uint8ArrayToBlob(outputData, 'video/mp4');
+    const outputBlob = uint8ArrayToBlob(outputData, 'video/quicktime');
 
     return {
       ...imageItem,
       id: `converted_${imageItem.id}`,
-      file: new File([outputBlob], `converted_${imageItem.fileName}.mp4`, { type: 'video/mp4' }),
-      fileName: `converted_${imageItem.fileName}.mp4`,
+      file: new File([outputBlob], `converted_${imageItem.fileName}.mov`, { type: 'video/quicktime' }),
+      fileName: `converted_${imageItem.fileName}.mov`,
       fileSize: outputBlob.size,
       duration: IMAGE_DURATION,
     };
   } finally {
     await deleteFile(imageFileName);
     await deleteFile(outputVideoFileName);
+  }
+};
+
+/**
+ * Normalize any video to a common format: mp4/h264/yuv420p/1080x1920/30fps
+ * Drops audio — it will be replaced by YouTube audio at the end.
+ */
+const normalizeVideo = async (
+  videoItem: VideoItem,
+  id: string,
+  onProgress?: (progress: number) => void
+): Promise<VideoItem> => {
+  const ext = getVideoExtension(videoItem.fileName);
+  const inputFileName = `input_norm_${id}.${ext}`;
+  const outputFileName = `output_norm_${id}.mov`;
+
+  await writeFile(inputFileName, videoItem.file);
+
+  try {
+    await exec(
+      [
+        '-i', inputFileName,
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-pix_fmt', 'yuv420p',
+        '-r', '30',
+        '-threads', '1',
+        '-an',
+        '-vf', 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1',
+        outputFileName,
+      ],
+      (progress) => onProgress?.(progress.progress * 100)
+    );
+
+    const outputData = await readFile(outputFileName);
+    const outputBlob = uint8ArrayToBlob(outputData, 'video/quicktime');
+
+    return {
+      ...videoItem,
+      id: `normalized_${videoItem.id}`,
+      file: new File([outputBlob], `normalized_${videoItem.fileName}.mov`, { type: 'video/quicktime' }),
+      fileName: `normalized_${videoItem.fileName}.mov`,
+      fileSize: outputBlob.size,
+    };
+  } finally {
+    await deleteFile(inputFileName);
+    await deleteFile(outputFileName);
   }
 };
 
@@ -225,7 +277,7 @@ export const concatenateVideos = async (
   // Detect format from first video
   const videoExtension = getVideoExtension(videos[0].fileName);
   const outputFileName = `concatenated_${timestamp}.${videoExtension}`;
-  const mimeType = `video/${videoExtension === 'm4v' ? 'mp4' : videoExtension}`;
+  const mimeType = getVideoMimeType(videoExtension);
 
   try {
     onProgress?.(5, 'Đang chuẩn bị ghép video...');
@@ -322,17 +374,22 @@ export const processVideos = async (
     const normalizedVideos: VideoItem[] = [];
     for (let i = 0; i < videos.length; i++) {
       const v = videos[i];
-      if (isImageFile(v.fileName)) {
-        onProgress?.({
-          currentVideo: i + 1,
-          totalVideos: videos.length,
-          currentOperation: `Đang chuyển đổi ảnh ${i + 1}/${videos.length} sang video...`,
-          progress: ((i) / videos.length) * 100,
-        });
-        const videoFromImage = await convertImageToVideo(v, `img_${Date.now()}_${i}`);
-        normalizedVideos.push(videoFromImage);
+      const id = `${Date.now()}_${i}`;
+      const isImage = isImageFile(v.fileName);
+
+      onProgress?.({
+        currentVideo: i + 1,
+        totalVideos: videos.length,
+        currentOperation: isImage
+          ? `Đang chuyển đổi ảnh ${i + 1}/${videos.length} sang video...`
+          : `Đang chuẩn hóa video ${i + 1}/${videos.length}...`,
+        progress: (i / videos.length) * 20,
+      });
+
+      if (isImage) {
+        normalizedVideos.push(await convertImageToVideo(v, `img_${id}`));
       } else {
-        normalizedVideos.push(v);
+        normalizedVideos.push(await normalizeVideo(v, `vid_${id}`));
       }
     }
 
